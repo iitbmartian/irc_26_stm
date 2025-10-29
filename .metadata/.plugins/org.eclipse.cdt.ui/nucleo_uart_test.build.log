@@ -1,0 +1,10 @@
+22:03:04 **** Incremental Build of configuration Debug for project nucleo_uart_test ****
+make -j22 all 
+arm-none-eabi-size  nucleo_uart_test.elf 
+   text	   data	    bss	    dec	    hex	filename
+  19176	     12	   1860	  21048	   5238	nucleo_uart_test.elf
+Finished building: default.size.stdout
+ 
+
+22:03:04 Build Finished. 0 errors, 0 warnings. (took 124ms)
+
