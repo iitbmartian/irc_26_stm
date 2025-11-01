@@ -1,0 +1,14 @@
+/*
+!.gitignore
+
+!/rover_stm_code/
+rover_stm_code/*
+!/rover_stm_code/Inc/
+!/rover_stm_code/Src/
+!/rover_stm_code/rover_stm_code.ioc
+
+# Ignore everything else inside rover_stm_code
+/rover_stm_code/*
+!/rover_stm_code/Inc/
+!/rover_stm_code/Src/
+!/rover_stm_code/rover_stm_code.ioc
