@@ -1,14 +1,17 @@
-/*
+*
+# Keep this file
 !.gitignore
+!*.ioc
+# Allow one-level-down directories
+!*/
+.metadata/
 
-!/rover_stm_code/
-rover_stm_code/*
-!/rover_stm_code/Inc/
-!/rover_stm_code/Src/
-!/rover_stm_code/rover_stm_code.ioc
+# Ignore all files in the root
+/*.*
 
-# Ignore everything else inside rover_stm_code
-/rover_stm_code/*
-!/rover_stm_code/Inc/
-!/rover_stm_code/Src/
-!/rover_stm_code/rover_stm_code.ioc
+# Allow Core/Inc and Core/Src folders (and all their contents) 
+# that are one level below the root
+!*/Core/Inc/**
+!*/Core/Src/**
+
+!*/**/*.ioc
