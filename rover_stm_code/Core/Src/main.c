@@ -134,9 +134,11 @@ int main(void)
   MX_UART4_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
-	//startup sequence
-	UART_DMA_START();
+  //startup sequence
+  UART_DMA_START();
 
+  //PCA9685_CAM_Init();
+  //MUX_ENCODER_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
