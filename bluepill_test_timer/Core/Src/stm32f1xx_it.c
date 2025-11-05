@@ -55,8 +55,8 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern DMA_HandleTypeDef hdma_i2c2_tx;
 extern DMA_HandleTypeDef hdma_i2c2_rx;
+extern DMA_HandleTypeDef hdma_i2c2_tx;
 extern I2C_HandleTypeDef hi2c2;
 extern TIM_HandleTypeDef htim1;
 /* USER CODE BEGIN EV */

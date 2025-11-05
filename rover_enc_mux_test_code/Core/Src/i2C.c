@@ -193,6 +193,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     // If using TIM6 for encoder updates
     if (htim->Instance == TIM1) {
+    	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
         Encoder_StartReading();  // trigger new reading cycle
     }
 }
