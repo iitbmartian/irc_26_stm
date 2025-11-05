@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "i2C.h"
+//#include "enc_poll.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -31,12 +32,18 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-extern int32_t pos[n_quad];
-extern int16_t diff[n_quad];
+#define n_quad 1
+//extern int32_t pos[n_quad];
+//extern int16_t diff[n_quad];
 
 int32_t dat[2*n_quad];
 uint8_t uart_data[8*n_quad];
-
+uint8_t dat1[1] = {1};
+uint8_t dat2[1] = {2};
+uint8_t dat3[1] = {3};
+uint8_t dat4[1] = {4};
+uint8_t dat5[1] = {5};
+uint8_t dat6[1] = {6};
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,7 +59,7 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-
+TIM_HandleTypeDef* tim_arr[n_quad] = {&htim2};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -67,6 +74,11 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+uint32_t enc_curr[n_quad] = {0};
+uint32_t enc_prev[n_quad] = {0};
+int16_t diff[n_quad] = {0};
+int32_t pos[n_quad] = {0}; //absolute position
+int i = 0;
 
 /* USER CODE END 0 */
 
@@ -120,6 +132,44 @@ int main(void)
 //	PCA9685_MOTOR_SetFrequency(200);
 //	PCA9685_MOTOR_SetPWM(0, 200, 4000);
 //	HAL_Delay(2000);
+	i = 0;
+	enc_prev[i] = enc_curr[i];
+
+	enc_curr[i] = TIM2->CNT;
+	if (__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2)){//should give negative diff
+		if (enc_curr[i] == enc_prev[i]){ //zero
+			diff[i] = 0;
+			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 1);
+			HAL_UART_Transmit(&huart1, dat1, 1, 100);
+		} else if (enc_curr[i] < enc_prev[i]){ //normal
+			diff[i] = enc_curr[i] - enc_prev[i];
+			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 0);
+			HAL_UART_Transmit(&huart1, dat2, 1, 100);
+		}
+		else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
+			diff[i] = -(__HAL_TIM_GET_AUTORELOAD(&htim2) - enc_curr[i] + enc_prev[i]);
+			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 0);
+			HAL_UART_Transmit(&huart1, dat3, 1, 100);
+		}
+	}
+	else{//should positive diff
+		if (enc_curr[i] == enc_prev[i]){ //zero
+			diff[i] = 0;
+			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 1);
+			HAL_UART_Transmit(&huart1, dat4, 1, 100);
+		} else if (enc_curr[i] > enc_prev[i]){ //normal
+			diff[i] = enc_curr[i] - enc_prev[i];
+			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 0);
+			HAL_UART_Transmit(&huart1, dat5, 1, 100);
+		}
+		else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
+			diff[i] = __HAL_TIM_GET_AUTORELOAD(&htim2) + enc_curr[i] - enc_prev[i];
+			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 0);
+			HAL_UART_Transmit(&huart1, dat6, 1, 100);
+		}
+	}
+
+	pos[i] += diff[i]; //absolute position
 	for (int i = 0; i < n_quad; i++){
 		dat[i] = pos[i];
 		dat[i + n_quad] = diff[i];
@@ -130,7 +180,7 @@ int main(void)
 		uart_data[4*i+3] = (dat[i]&0xF000)>>24;
 	}
 
-	HAL_UART_Transmit(&huart1, uart_data, 4*n_quad, 100);
+	//HAL_UART_Transmit(&huart1, uart_data, 4*n_quad, 100);
 	HAL_Delay(100);
   }
   /* USER CODE END 3 */
@@ -298,6 +348,7 @@ static void MX_USART1_UART_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
 
   /* USER CODE END MX_GPIO_Init_1 */
@@ -307,6 +358,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : led_Pin */
+  GPIO_InitStruct.Pin = led_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(led_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
