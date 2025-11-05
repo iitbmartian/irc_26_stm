@@ -3,7 +3,7 @@
 
 #include "main.h"
 
-#define n_quad 5
+#define n_quad 1
 
 void enc_poll_update();
 

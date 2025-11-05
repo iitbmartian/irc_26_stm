@@ -6,13 +6,9 @@
 uint32_t enc_curr[n_quad] = {0};
 uint32_t enc_prev[n_quad] = {0};
 
-extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim3;
-extern TIM_HandleTypeDef htim4;
-extern TIM_HandleTypeDef htim8;
 
-TIM_HandleTypeDef* tim_arr[n_quad] = {&htim1, &htim2, &htim3, &htim4, &htim8};
+TIM_HandleTypeDef* tim_arr[n_quad] = {&htim2};
 
 int16_t diff[n_quad] = {0};
 int32_t pos[n_quad] = {0}; //absolute position
@@ -23,7 +19,7 @@ void enc_poll_update(){
 	for (int i = 0; i<n_quad; i++){
 		enc_prev[i] = enc_curr[i];
 
-		enc_curr[i] = ((*(tim_arr[i])).Instance)->CNT;
+		enc_curr[i] = ((*(tim_arr[i])).Instance)->CNT; //(*htimx.Instance) = TIMx
 
 		if (__HAL_TIM_IS_TIM_COUNTING_DOWN(tim_arr[i])){//should give negative diff
 			if (enc_curr[i] == enc_prev[i]){ //zero
