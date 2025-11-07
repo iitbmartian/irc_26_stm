@@ -2,6 +2,7 @@
 # Keep this file
 !.gitignore
 !*.ioc
+!*.py
 # Allow one-level-down directories
 !*/
 .metadata/

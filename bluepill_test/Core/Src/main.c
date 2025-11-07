@@ -118,7 +118,7 @@ int main(void)
   PCA9685_MOTOR_Init();
   PCA9685_MOTOR_SetFrequency(1000);
   PCA9685_MOTOR_SetPWM(0, 200, 4000);
-
+  HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -135,37 +135,37 @@ int main(void)
 	i = 0;
 	enc_prev[i] = enc_curr[i];
 
-	enc_curr[i] = TIM2->CNT;
+	enc_curr[i] = __HAL_TIM_GET_COUNTER(&htim2);
 	if (__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2)){//should give negative diff
 		if (enc_curr[i] == enc_prev[i]){ //zero
 			diff[i] = 0;
 			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 1);
-			HAL_UART_Transmit(&huart1, dat1, 1, 100);
+//			HAL_UART_Transmit(&huart1, dat1, 1, 100);
 		} else if (enc_curr[i] < enc_prev[i]){ //normal
 			diff[i] = enc_curr[i] - enc_prev[i];
 			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 0);
-			HAL_UART_Transmit(&huart1, dat2, 1, 100);
+//			HAL_UART_Transmit(&huart1, dat2, 1, 100);
 		}
 		else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
 			diff[i] = -(__HAL_TIM_GET_AUTORELOAD(&htim2) - enc_curr[i] + enc_prev[i]);
 			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 0);
-			HAL_UART_Transmit(&huart1, dat3, 1, 100);
+//			HAL_UART_Transmit(&huart1, dat3, 1, 100);
 		}
 	}
 	else{//should positive diff
 		if (enc_curr[i] == enc_prev[i]){ //zero
 			diff[i] = 0;
 			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 1);
-			HAL_UART_Transmit(&huart1, dat4, 1, 100);
+//			HAL_UART_Transmit(&huart1, dat4, 1, 100);
 		} else if (enc_curr[i] > enc_prev[i]){ //normal
 			diff[i] = enc_curr[i] - enc_prev[i];
 			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 0);
-			HAL_UART_Transmit(&huart1, dat5, 1, 100);
+//			HAL_UART_Transmit(&huart1, dat5, 1, 100);
 		}
 		else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
 			diff[i] = __HAL_TIM_GET_AUTORELOAD(&htim2) + enc_curr[i] - enc_prev[i];
 			HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, 0);
-			HAL_UART_Transmit(&huart1, dat6, 1, 100);
+//			HAL_UART_Transmit(&huart1, dat6, 1, 100);
 		}
 	}
 
@@ -174,13 +174,18 @@ int main(void)
 		dat[i] = pos[i];
 		dat[i + n_quad] = diff[i];
 
-		uart_data[4*i] = dat[i]&0x000F;
-		uart_data[4*i+1] = (dat[i]&0x00F0)>>8;
-		uart_data[4*i+2] = (dat[i]&0x0F00)>>16;
-		uart_data[4*i+3] = (dat[i]&0xF000)>>24;
+		uart_data[4*i] = dat[i]&0x000000FF;
+		uart_data[4*i+1] = (dat[i]&0x0000FF00)>>8;
+		uart_data[4*i+2] = (dat[i]&0x00FF0000)>>16;
+		uart_data[4*i+3] = (dat[i]&0xFF000000)>>24;
+
+		uart_data[4*(i+n_quad)] = dat[i+n_quad]&0x000000FF;
+		uart_data[4*(i+n_quad)+1] = (dat[i+n_quad]&0x0000FF00)>>8;
+		uart_data[4*(i+n_quad)+2] = (dat[i+n_quad]&0x00FF0000)>>16;
+		uart_data[4*(i+n_quad)+3] = (dat[i+n_quad]&0xFF000000)>>24;
 	}
 
-	//HAL_UART_Transmit(&huart1, uart_data, 4*n_quad, 100);
+	HAL_UART_Transmit(&huart1, uart_data, 8*n_quad, 100);
 	HAL_Delay(100);
   }
   /* USER CODE END 3 */
