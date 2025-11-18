@@ -111,13 +111,11 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 1); //for debugging
   while (1)
   {
-//	  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 1);
-//	  HAL_Delay(1000);
-//	  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 0);
-	  HAL_Delay(1000);
-	  HAL_UART_Transmit(&huart1, TxData_buf, data_out_length, HAL_MAX_DELAY);
+	  HAL_Delay(100);
+	  HAL_UART_Transmit(&huart1, TxData_buf, data_out_length, 100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

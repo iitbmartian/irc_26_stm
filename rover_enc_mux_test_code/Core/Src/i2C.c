@@ -84,24 +84,25 @@ void Encoder_ReadValues(void){
 		}
 		break;
 	case STATE_NEXT_ENCODER:
-		raw_angle = ((uint16_t)rx_data[0] << 8) | ((uint16_t)rx_data[1]); //rx_data[0] has higher 8 bits of which last 4 are useful. rx_data[1] has lower 8 bits. This just combines both into a single uint16_t
+		raw_angle = (((uint16_t)rx_data[0] << 8) | ((uint16_t)rx_data[1])) & 0x0FFF; //rx_data[0] has higher 8 bits of which last 4 are useful. rx_data[1] has lower 8 bits. This just combines both into a single uint16_t
 		encoder_angles[current_channel] = RawToDegrees(raw_angle);
 
 		current_channel++; //move to next encoder
 
 		if (current_channel >= NUM_ENCODERS) { //reset all flags
-			current_state = STATE_IDLE;
-			i2C_busy = 0;
-			encoder_ready_flag = 1;  //flag that all encoders are ready
+			HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 
-			for(int i = 0; i < 2*NUM_ENCODERS; i++){
+			for(int i = 0; i < NUM_ENCODERS; i++){
 				//current abc.de --> abcde (16 bit integer). then high_byte is the top 8 bits and low_byte is lower 8 bits. Both are sent to TxData_buf
 				high_byte = (uint16_t)(encoder_angles[i]*100) >> 8;
-				low_byte = (uint8_t)(((uint16_t)(encoder_angles[i]*100))/100);
+				low_byte = ((uint16_t)(encoder_angles[i]*100)) & 0xFF;
 				TxData_buf[2*i] = high_byte;
 				TxData_buf[2*i+1] = low_byte;
 				//Final TxData_buf is [enc1_high,enc1_low,enc2_high,enc2_low,enc3_high,enc3_low ... ]
 			}
+			current_state = STATE_IDLE;
+			i2C_busy = 0;
+			encoder_ready_flag = 1;  //flag that all encoders are ready
 		}
 		else {
 			// Read next encoder
@@ -193,7 +194,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     // If using TIM6 for encoder updates
     if (htim->Instance == TIM1) {
-    	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+//    	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
         Encoder_StartReading();  // trigger new reading cycle
     }
 }
