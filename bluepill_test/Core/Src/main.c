@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "i2C.h"
+#include <stdbool.h>
 //#include "enc_poll.h"
 /* USER CODE END Includes */
 
@@ -36,8 +37,8 @@
 //extern int32_t pos[n_quad];
 //extern int16_t diff[n_quad];
 
-int32_t dat[2*n_quad];
-uint8_t uart_data[8*n_quad];
+int32_t dat[3*n_quad];
+uint8_t uart_data[12*n_quad];
 uint8_t dat1[1] = {1};
 uint8_t dat2[1] = {2};
 uint8_t dat3[1] = {3};
@@ -76,9 +77,12 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN 0 */
 uint32_t enc_curr[n_quad] = {0};
 uint32_t enc_prev[n_quad] = {0};
+bool down = 0;
 int16_t diff[n_quad] = {0};
+int16_t diff2[n_quad] = {0};
+int16_t diff_prev[n_quad] = {0};
 int32_t pos[n_quad] = {0}; //absolute position
-int i = 0;
+int i, pwmi = 0;
 
 /* USER CODE END 0 */
 
@@ -117,7 +121,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   PCA9685_MOTOR_Init();
   PCA9685_MOTOR_SetFrequency(1000);
-  PCA9685_MOTOR_SetPWM(0, 200, 4000);
+  PCA9685_MOTOR_SetPWM(0, 0, 0);
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
   /* USER CODE END 2 */
 
@@ -132,8 +136,21 @@ int main(void)
 //	PCA9685_MOTOR_SetFrequency(200);
 //	PCA9685_MOTOR_SetPWM(0, 200, 4000);
 //	HAL_Delay(2000);
+	PCA9685_MOTOR_SetPWM(0, 0, pwmi*5);
+	if (pwmi == 4000){
+		down = true;
+	} else if (pwmi == 0){
+		down = false;
+	}
+	if (down){
+		pwmi -= 10;
+	}
+	else{
+		pwmi += 10;
+	}
 	i = 0;
 	enc_prev[i] = enc_curr[i];
+	diff_prev[i] = diff[i];
 
 	enc_curr[i] = __HAL_TIM_GET_COUNTER(&htim2);
 	if (__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2)){//should give negative diff
@@ -170,9 +187,12 @@ int main(void)
 	}
 
 	pos[i] += diff[i]; //absolute position
+	diff2[i] = diff[i] - diff_prev[i];
+
 	for (int i = 0; i < n_quad; i++){
 		dat[i] = pos[i];
 		dat[i + n_quad] = diff[i];
+		dat[i + 2*n_quad] = diff2[i];
 
 		uart_data[4*i] = dat[i]&0x000000FF;
 		uart_data[4*i+1] = (dat[i]&0x0000FF00)>>8;
@@ -183,9 +203,14 @@ int main(void)
 		uart_data[4*(i+n_quad)+1] = (dat[i+n_quad]&0x0000FF00)>>8;
 		uart_data[4*(i+n_quad)+2] = (dat[i+n_quad]&0x00FF0000)>>16;
 		uart_data[4*(i+n_quad)+3] = (dat[i+n_quad]&0xFF000000)>>24;
+
+		uart_data[4*(i+2*n_quad)] = dat[i+2*n_quad]&0x000000FF;
+		uart_data[4*(i+2*n_quad)+1] = (dat[i+2*n_quad]&0x0000FF00)>>8;
+		uart_data[4*(i+2*n_quad)+2] = (dat[i+2*n_quad]&0x00FF0000)>>16;
+		uart_data[4*(i+2*n_quad)+3] = (dat[i+2*n_quad]&0xFF000000)>>24;
 	}
 
-	HAL_UART_Transmit(&huart1, uart_data, 8*n_quad, 100);
+	HAL_UART_Transmit(&huart1, uart_data, 12*n_quad, 100);
 	HAL_Delay(100);
   }
   /* USER CODE END 3 */

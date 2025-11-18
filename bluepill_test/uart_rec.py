@@ -23,13 +23,14 @@ while True:
         #ser.write(bytes([1, 2, 3]))
         bytesToRead = ser.inWaiting()
         data = ser.read(bytesToRead)
-        frame = [np.int32(i) for i in data[-8*n_quad:]]
+        frame = [np.int32(i) for i in data[-12*n_quad:]]
         # print(frame, data)
         #data_decode = np.array(dtype=np.int32)
         for i in range(0, n_quad):
             #data_decode.append(
             print(np.int32((frame[4*i] & 0xFF) | ((frame[4*i+1] & 0xFF) << 8) | ((frame[4*i+2] & 0xFF) << 16) | ((frame[4*i+3] & 0xFF) << 24)), end= ", ")
-            print(np.int32(frame[4*(i+n_quad)] & 0xFF) | ((frame[4*(i+n_quad)+1] & 0xFF) << 8) | ((frame[4*(i+n_quad)+2] & 0xFF) << 16) | ((frame[4*(i+n_quad)+3] & 0xFF) << 24))
+            print(np.int32(frame[4*(i+n_quad)] & 0xFF) | ((frame[4*(i+n_quad)+1] & 0xFF) << 8) | ((frame[4*(i+n_quad)+2] & 0xFF) << 16) | ((frame[4*(i+n_quad)+3] & 0xFF) << 24), end= ", ")
+            print(np.int32((frame[4*(i+2*n_quad)] & 0xFF) | ((frame[4*(i+2*n_quad)+1] & 0xFF) << 8) | ((frame[4*(i+2*n_quad)+2] & 0xFF) << 16) | ((frame[4*(i+2*n_quad)+3] & 0xFF) << 24)))
         #print(data_decode[-1])
     except Exception as e:
         print(e)
