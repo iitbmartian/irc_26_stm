@@ -10,7 +10,7 @@
 #include "main.h"
 
 #define data_in_length 12 //input byte array
-#define data_out_length 12 //12 bytes of encoder feed xx.xx degrees
+#define data_out_length 2 //2*(magnetic encoder number) bytes of encoder feed xx.xx degrees
 
 void UART_DMA_START(void);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);

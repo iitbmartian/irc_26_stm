@@ -111,7 +111,6 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, 1); //for debugging
   while (1)
   {
 	  HAL_Delay(100);

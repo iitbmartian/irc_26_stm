@@ -61,6 +61,7 @@ TIM_HandleTypeDef htim8;
 UART_HandleTypeDef huart4;
 
 /* USER CODE BEGIN PV */
+extern uint8_t TxData_buf[];
 
 /* USER CODE END PV */
 
@@ -135,16 +136,15 @@ int main(void)
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   //startup sequence
-  UART_DMA_START();
-
-  //PCA9685_CAM_Init();
-  //MUX_ENCODER_Init();
+  HAL_TIM_Base_Start_IT(&htim6); //I2C mux read interupt timer
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
+		HAL_Delay(100); // delay between magnetic encoder data
+		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

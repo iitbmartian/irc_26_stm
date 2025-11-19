@@ -16,7 +16,7 @@
 #define AS5600_ADDRESS (0x36 << 1)
 #define AS5600_ANGLE_H 0x0E	//lower 4 of upper 8 bit register
 #define AS5600_ANGLE_L 0x0F //lower 8 bits of angle (12 bit)
-#define NUM_ENCODERS 6 //number of AS5600 encoders
+#define NUM_ENCODERS 1 //number of AS5600 encoders (1 for testing, 6 in reality)
 #define TCA9548A_ADDRESS (0x70 << 1)
 #define PCA9685_PRESCALE 0xFE
 #define PCA9685_MODE1 0x00 //normal working --> mode1
