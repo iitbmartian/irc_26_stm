@@ -23,7 +23,6 @@
 /* USER CODE BEGIN Includes */
 #include "i2C.h"
 #include "uart.h"
-#include "enc_poll.h"
 #include "stepper.h"
 /* USER CODE END Includes */
 
@@ -102,7 +101,7 @@ int16_t diff_prev[n_quad] = {0};
 int32_t pos[n_quad] = {0}; //absolute position
 int32_t dat[3*n_quad];
 
-//int i, pwmi = 0;
+int i;
 
 int16_t diffdat[n_quad] = {0};
 /* USER CODE END 0 */
