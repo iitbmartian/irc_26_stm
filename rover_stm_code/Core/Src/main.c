@@ -24,6 +24,7 @@
 #include "i2C.h"
 #include "uart.h"
 #include "enc_poll.h"
+#include "stepper.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
