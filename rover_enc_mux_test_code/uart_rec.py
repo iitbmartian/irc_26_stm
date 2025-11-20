@@ -3,7 +3,7 @@ import time
 import numpy as np
 n_quad = 1
 ser = serial.Serial(
-    port='COM9',
+    port='COM11',
     baudrate=115200,
     bytesize=serial.EIGHTBITS,
     parity=serial.PARITY_NONE,
@@ -24,7 +24,7 @@ while True:
         bytesToRead = ser.inWaiting()
         data = ser.read(bytesToRead)
         if len(data) != 0:
-            #print(data) 
+            print(data) 
             low_byte = np.uint16(data[-1])
             high_byte = np.uint16(data[-2])
             print(np.uint16(low_byte | (high_byte << 8))/100)

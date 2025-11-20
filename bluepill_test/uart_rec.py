@@ -4,7 +4,7 @@ import numpy as np
 n_quad = 1
 ser = serial.Serial(
     port='COM11',
-    baudrate=9600,
+    baudrate=115200,
     bytesize=serial.EIGHTBITS,
     parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE,
@@ -24,7 +24,8 @@ while True:
         bytesToRead = ser.inWaiting()
         data = ser.read(bytesToRead)
         frame = [np.int32(i) for i in data[-12*n_quad-2:-2]]
-        # print(frame, data)
+        print(frame)
+        #print(data)
         #data_decode = np.array(dtype=np.int32)
         low_byte = np.uint16(data[-1])
         high_byte = np.uint16(data[-2])
