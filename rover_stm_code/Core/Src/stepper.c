@@ -9,6 +9,7 @@
 #include "main.h"
 
 _Bool rotate = 0;
+_Bool step_pulse = 0;
 
 void wrist_turn(int command){
 	switch(command){
@@ -36,9 +37,24 @@ void wrist_turn(int command){
 		rotate = 0;
 		break;
 	}
+}
 
-	if(rotate){
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance == TIM7){
+		if(rotate){
+			step_pulse = !step_pulse;
+			HAL_GPIO_WritePin(PULSE1_GPIO_Port, PULSE1_Pin, step_pulse);
+			HAL_GPIO_WritePin(PULSE2_GPIO_Port, PULSE2_Pin, step_pulse);
+		}
+		else{
+			HAL_GPIO_WritePin(PULSE1_GPIO_Port, PULSE1_Pin, 0);
+			HAL_GPIO_WritePin(PULSE2_GPIO_Port, PULSE2_Pin, 0);
+		}
 	}
+    // If using TIM6 for encoder updates
+    if (htim->Instance == TIM6) {
+        Encoder_StartReading();  // trigger new reading cycle
+    }
 }
 
