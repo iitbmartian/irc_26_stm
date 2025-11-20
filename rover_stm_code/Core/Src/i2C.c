@@ -188,14 +188,7 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
     }
 }
 
-//periodic trigger of entire encoder value reading (10ms for now --> Prescalar 7199 of TIM6)
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    // If using TIM6 for encoder updates
-    if (htim->Instance == TIM6) {
-        Encoder_StartReading();  // trigger new reading cycle
-    }
-}
+//THE TIMER CALLBACK IS IN STEPPER.C FILE (multiple definitions not supported of timer callback function)
 
 //end callback functions
 
