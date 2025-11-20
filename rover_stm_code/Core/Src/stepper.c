@@ -52,9 +52,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			HAL_GPIO_WritePin(PULSE2_GPIO_Port, PULSE2_Pin, 0);
 		}
 	}
+
     // If using TIM6 for encoder updates
     if (htim->Instance == TIM6) {
-        Encoder_StartReading();  // trigger new reading cycle
+        Encoder_StartReading();  // trigger new reading cycle (I2C mux)
     }
 }
 
