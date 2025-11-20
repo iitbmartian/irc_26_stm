@@ -95,8 +95,8 @@ void Encoder_ReadValues(void){
 				//current abc.de --> abcde (16 bit integer). then high_byte is the top 8 bits and low_byte is lower 8 bits. Both are sent to TxData_buf
 				high_byte = (uint16_t)(encoder_angles[i]*100) >> 8;
 				low_byte = ((uint16_t)(encoder_angles[i]*100)) & 0xFF;
-				TxData_buf[2*i] = high_byte;
-				TxData_buf[2*i+1] = low_byte;
+				TxData_buf[12*n_quad + 2*i] = high_byte;
+				TxData_buf[12*n_quad + 2*i + 1] = low_byte;
 				//Final TxData_buf is [enc1_high,enc1_low,enc2_high,enc2_low,enc3_high,enc3_low ... ]
 			}
 			current_state = STATE_IDLE;

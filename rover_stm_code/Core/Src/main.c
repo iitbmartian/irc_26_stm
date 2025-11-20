@@ -87,8 +87,20 @@ static void MX_TIM6_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-extern int16_t diff[n_quad];
-extern int32_t pos[n_quad];
+
+uint32_t enc_curr[n_quad] = {0};
+uint32_t enc_prev[n_quad] = {0};
+
+//_Bool down = 0;
+
+int16_t diff[n_quad] = {0};
+int16_t diff2[n_quad] = {0};
+int16_t diff_prev[n_quad] = {0};
+
+int32_t pos[n_quad] = {0}; //absolute position
+int32_t dat[3*n_quad];
+
+//int i, pwmi = 0;
 
 int16_t diffdat[n_quad] = {0};
 /* USER CODE END 0 */
@@ -144,8 +156,58 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		HAL_Delay(100); // delay between magnetic encoder data
+		enc_prev[i] = enc_curr[i];
+		diff_prev[i] = diff[i];
+
+		enc_curr[i] = __HAL_TIM_GET_COUNTER(&htim2);
+		if (__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2)){//should give negative diff
+			if (enc_curr[i] == enc_prev[i]){ //zero
+				diff[i] = 0;
+			} else if (enc_curr[i] < enc_prev[i]){ //normal
+				diff[i] = enc_curr[i] - enc_prev[i];
+			}
+			else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
+				diff[i] = -(__HAL_TIM_GET_AUTORELOAD(&htim2) - enc_curr[i] + enc_prev[i]);
+			}
+		}
+		else{//should positive diff
+			if (enc_curr[i] == enc_prev[i]){ //zero
+				diff[i] = 0;
+			} else if (enc_curr[i] > enc_prev[i]){ //normal
+				diff[i] = enc_curr[i] - enc_prev[i];
+			}
+			else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
+				diff[i] = __HAL_TIM_GET_AUTORELOAD(&htim2) + enc_curr[i] - enc_prev[i];
+			}
+		}
+
+		pos[i] += diff[i]; //absolute position
+		diff2[i] = diff[i] - diff_prev[i];
+
+		for (int i = 0; i < n_quad; i++){
+			dat[i] = pos[i];
+			dat[i + n_quad] = diff[i];
+			dat[i + 2*n_quad] = diff2[i];
+
+			TxData_buf[4*i] = dat[i]&0x000000FF;
+			TxData_buf[4*i+1] = (dat[i]&0x0000FF00)>>8;
+			TxData_buf[4*i+2] = (dat[i]&0x00FF0000)>>16;
+			TxData_buf[4*i+3] = (dat[i]&0xFF000000)>>24;
+
+			TxData_buf[4*(i+n_quad)] = dat[i+n_quad]&0x000000FF;
+			TxData_buf[4*(i+n_quad)+1] = (dat[i+n_quad]&0x0000FF00)>>8;
+			TxData_buf[4*(i+n_quad)+2] = (dat[i+n_quad]&0x00FF0000)>>16;
+			TxData_buf[4*(i+n_quad)+3] = (dat[i+n_quad]&0xFF000000)>>24;
+
+			TxData_buf[4*(i+2*n_quad)] = dat[i+2*n_quad]&0x000000FF;
+			TxData_buf[4*(i+2*n_quad)+1] = (dat[i+2*n_quad]&0x0000FF00)>>8;
+			TxData_buf[4*(i+2*n_quad)+2] = (dat[i+2*n_quad]&0x00FF0000)>>16;
+			TxData_buf[4*(i+2*n_quad)+3] = (dat[i+2*n_quad]&0xFF000000)>>24;
+		}
+
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
+
+		HAL_Delay(100); // delay between magnetic encoder data
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
