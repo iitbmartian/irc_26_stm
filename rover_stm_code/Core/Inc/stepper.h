@@ -9,7 +9,7 @@
 #ifndef INC_STEPPER_H_
 #define INC_STEPPER_H_
 
-void Encoder_StartReading(void);
+void Encoder_StartReading();
 void wrist_turn();
 
 #endif /* INC_STEPPER_H_ */

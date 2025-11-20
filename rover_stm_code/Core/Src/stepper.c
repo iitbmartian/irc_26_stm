@@ -5,13 +5,22 @@
  *      Author: shrid
  */
 
+/*
+ * Command Library:
+ * 0 : forward
+ * 1 : backwards
+ * 2 : left
+ * 3 : right
+ * 4 : do nothing (or anything else)
+ */
+
 #include "stepper.h"
 #include "main.h"
 
 _Bool rotate = 0;
 _Bool step_pulse = 0;
 
-void wrist_turn(int command){
+void wrist_turn(uint8_t command){
 	switch(command){
 	case 0: //both forward
 		rotate = 1;
