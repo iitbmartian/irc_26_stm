@@ -24,12 +24,12 @@ while True:
         bytesToRead = ser.inWaiting()
         data = ser.read(bytesToRead)
         frame = [np.int32(i) for i in data[-12*n_quad-2:-2]]
-        print(frame)
+        #print(frame)
         #print(data)
         #data_decode = np.array(dtype=np.int32)
         low_byte = np.uint16(data[-1])
         high_byte = np.uint16(data[-2])
-        print(np.uint16(low_byte | (high_byte << 8))/100)
+        print(np.uint16(low_byte | (high_byte << 8))/100, end = ", ")
 
         for i in range(0, n_quad):
             #data_decode.append(
@@ -39,5 +39,5 @@ while True:
         #print(data_decode[-1])
     except Exception as e:
         print(e)
-    time.sleep(0.1)
+    time.sleep(0.3)
 ser.close()

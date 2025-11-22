@@ -24,6 +24,7 @@
 #include "i2C.h"
 #include "uart.h"
 #include "stepper.h"
+#include "quad_gpio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,6 +105,9 @@ int32_t dat[3*n_quad];
 int i;
 
 int16_t diffdat[n_quad] = {0};
+
+extern volatile int32_t quad_count;
+
 /* USER CODE END 0 */
 
 /**
@@ -150,8 +154,10 @@ int main(void)
   MX_TIM6_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
   //startup sequence
   HAL_TIM_Base_Start_IT(&htim6); //I2C mux read interupt timer
+  Encoder_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -947,11 +953,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DRILL_QUAD_A_Pin DRILL_QUAD_B_Pin */
-  GPIO_InitStruct.Pin = DRILL_QUAD_A_Pin|DRILL_QUAD_B_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pin : DRILL_QUAD_A_Pin */
+  GPIO_InitStruct.Pin = DRILL_QUAD_A_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(DRILL_QUAD_A_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : DRILL_QUAD_B_Pin */
+  GPIO_InitStruct.Pin = DRILL_QUAD_B_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(DRILL_QUAD_B_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -959,7 +975,14 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if(GPIO_Pin == DRILL_QUAD_A_Pin || GPIO_Pin == DRILL_QUAD_B_Pin) {
+    Encoder_Process();
+  } else {
+      __NOP();
+  }
+}
 /* USER CODE END 4 */
 
 /**

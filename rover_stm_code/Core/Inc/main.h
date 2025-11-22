@@ -87,8 +87,10 @@ void Error_Handler(void);
 #define PULSE1_GPIO_Port GPIOB
 #define DRILL_QUAD_A_Pin GPIO_PIN_8
 #define DRILL_QUAD_A_GPIO_Port GPIOC
+#define DRILL_QUAD_A_EXTI_IRQn EXTI9_5_IRQn
 #define DRILL_QUAD_B_Pin GPIO_PIN_9
 #define DRILL_QUAD_B_GPIO_Port GPIOC
+#define DRILL_QUAD_B_EXTI_IRQn EXTI9_5_IRQn
 #define DIR3_Pin GPIO_PIN_13
 #define DIR3_GPIO_Port GPIOA
 #define DIR_STEP_1_Pin GPIO_PIN_12

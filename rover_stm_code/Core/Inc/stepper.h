@@ -10,6 +10,6 @@
 #define INC_STEPPER_H_
 
 void Encoder_StartReading();
-void wrist_turn();
+void wrist_turn(uint8_t);
 
 #endif /* INC_STEPPER_H_ */
