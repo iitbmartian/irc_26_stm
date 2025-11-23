@@ -102,12 +102,21 @@ int16_t diff_prev[n_quad] = {0};
 int32_t pos[n_quad] = {0}; //absolute position
 int32_t dat[3*n_quad];
 
+int16_t gpio_diff = 0;
+int16_t gpio_diff2 = 0;
+int16_t gpio_diff_prev = 0;
+
+int32_t gpio_pos = 0;
+int32_t gpio_enc_curr = 0; //absolute position
+int32_t gpio_enc_prev = 0;
+
+
 int i;
 
 int16_t diffdat[n_quad] = {0};
 
 extern volatile int32_t quad_count;
-
+extern volatile uint8_t gpio_quad_counting_down;
 /* USER CODE END 0 */
 
 /**
@@ -212,6 +221,53 @@ int main(void)
 			TxData_buf[4*(i+2*n_quad)+2] = (dat[i+2*n_quad]&0x00FF0000)>>16;
 			TxData_buf[4*(i+2*n_quad)+3] = (dat[i+2*n_quad]&0xFF000000)>>24;
 		}
+
+		gpio_enc_prev = gpio_enc_curr;
+		gpio_diff_prev = gpio_diff;
+
+		gpio_enc_curr = quad_count;
+		if (gpio_quad_counting_down){//should give negative diff
+			if (gpio_enc_curr == gpio_enc_prev){ //zero
+				gpio_diff = 0;
+			} else if (gpio_enc_curr < gpio_enc_prev){ //normal
+				gpio_diff = gpio_enc_curr - gpio_enc_prev;
+			}
+			else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
+				gpio_diff = -(quad_count - gpio_enc_curr + gpio_enc_prev);
+			}
+		}
+		else{//should positive diff
+			if (gpio_enc_curr == gpio_enc_prev){ //zero
+				gpio_diff = 0;
+			} else if (gpio_enc_curr > gpio_enc_prev){ //normal
+				gpio_diff = gpio_enc_curr - gpio_enc_prev;
+			}
+			else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
+				gpio_diff = quad_count + gpio_enc_curr - gpio_enc_prev;
+			}
+		}
+
+		gpio_pos += gpio_diff; //absolute position
+		gpio_diff2 = gpio_diff - gpio_diff_prev;
+
+		dat[i] = gpio_pos;
+		dat[i + n_quad] = gpio_diff;
+		dat[i + 2*n_quad] = gpio_diff2;
+
+		TxData_buf[4*i+12] = dat[i]&0x000000FF;
+		TxData_buf[4*i+13] = (dat[i]&0x0000FF00)>>8;
+		TxData_buf[4*i+14] = (dat[i]&0x00FF0000)>>16;
+		TxData_buf[4*i+15] = (dat[i]&0xFF000000)>>24;
+
+		TxData_buf[4*(i+n_quad)+12] = dat[i+n_quad]&0x000000FF;
+		TxData_buf[4*(i+n_quad)+13] = (dat[i+n_quad]&0x0000FF00)>>8;
+		TxData_buf[4*(i+n_quad)+14] = (dat[i+n_quad]&0x00FF0000)>>16;
+		TxData_buf[4*(i+n_quad)+15] = (dat[i+n_quad]&0xFF000000)>>24;
+
+		TxData_buf[4*(i+2*n_quad)+12] = dat[i+2*n_quad]&0x000000FF;
+		TxData_buf[4*(i+2*n_quad)+13] = (dat[i+2*n_quad]&0x0000FF00)>>8;
+		TxData_buf[4*(i+2*n_quad)+14] = (dat[i+2*n_quad]&0x00FF0000)>>16;
+		TxData_buf[4*(i+2*n_quad)+15] = (dat[i+2*n_quad]&0xFF000000)>>24;
 
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
 

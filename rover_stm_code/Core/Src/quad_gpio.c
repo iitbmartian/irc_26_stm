@@ -1,6 +1,6 @@
 #include "quad_gpio.h"
 volatile int32_t quad_count = 0;
-
+volatile uint8_t gpio_quad_counting_down = 0;
 volatile uint8_t prev_state = 0;
 volatile uint8_t curr_state;
 
@@ -43,7 +43,12 @@ void Encoder_Process(void)
     uint8_t index = (prev_state << 2) | curr_state;
 
     // Update counter based on transition
-    quad_count += quad_table[index];
+    quad_count += 2*quad_table[index];
+    if (quad_table[index] == -1){
+    	gpio_quad_counting_down = 1;
+    } else {
+    	gpio_quad_counting_down = 0;
+    }
 
     // Update previous state
     prev_state = curr_state;
