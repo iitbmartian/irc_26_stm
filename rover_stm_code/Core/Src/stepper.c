@@ -66,5 +66,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (htim->Instance == TIM6) {
         Encoder_StartReading();  // trigger new reading cycle (I2C mux)
     }
+
+    if(htim -> Instance == TIM16){
+    	Read_All_ADC();
+    }
 }
 
