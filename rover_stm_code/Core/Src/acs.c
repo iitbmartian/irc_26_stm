@@ -14,7 +14,7 @@ extern uint8_t TxData_buf[]; //extern TxData_buf in uart code
 // ADC input is 0 at 0 Volt and 4096 at 3.3 volts
 // At current max we want ADC cut as:
 
-uint16_t adc_cut_value = (uint16_t)((Current_Threshold*0.1f + 2.5f)/3.0f)*(ADC_MAX_VALUE/3.3f);
+uint16_t adc_cut_value = (uint16_t)((Current_Threshold*0.1f + 2.5f)*(2.0f/3.0f))*(ADC_MAX_VALUE/3.3f);
 
 volatile uint8_t motor_overcurrent_flags[NUM_ACS] = {0};
 volatile uint32_t motor_overcurrent_timestamp[NUM_ACS] = {0};
