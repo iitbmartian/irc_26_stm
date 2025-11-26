@@ -65,6 +65,7 @@ TIM_HandleTypeDef htim8;
 TIM_HandleTypeDef htim16;
 
 UART_HandleTypeDef huart4;
+DMA_HandleTypeDef hdma_uart4_rx;
 
 /* USER CODE BEGIN PV */
 extern uint8_t TxData_buf[];
@@ -98,6 +99,11 @@ static void MX_TIM16_Init(void);
 
 uint32_t enc_curr[NUM_QUAD] = {0};
 uint32_t enc_prev[NUM_QUAD] = {0};
+
+uint8_t uart_rx_buf[2];
+volatile uint8_t pwm_arr[1];
+uint16_t pwm_out[1];
+volatile _Bool dir_arr[1];
 
 //_Bool down = 0;
 
@@ -177,14 +183,24 @@ int main(void)
   //startup sequence
   HAL_TIM_Base_Start_IT(&htim6); //I2C mux read interupt timer
   Encoder_Init();
-
   Start_ADC_DMA_All();
+  PCA9685_MOTOR_Init();
+  PCA9685_MOTOR_SetFrequency(1000);
+  PCA9685_MOTOR_SetPWM(0, 0, 1200);
+
+  HAL_UART_Receive_DMA (&huart4, uart_rx_buf, 2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
+		for (int i= 0; i < NUM_QUAD; i++){
+			pwm_out[i] = pwm_arr[i];
+			pwm_out[i] = pwm_out[i] << 4;
+			PCA9685_MOTOR_SetPWM(0, 0, pwm_out[i]);
+			HAL_GPIO_WritePin(DIR1_GPIO_Port, DIR1_Pin, dir_arr[i]);
+		}
 		enc_prev[i] = enc_curr[i];
 		diff_prev[i] = diff[i];
 
@@ -1078,6 +1094,9 @@ static void MX_DMA_Init(void)
   /* DMA2_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Channel1_IRQn);
+  /* DMA2_Channel3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel3_IRQn);
 
 }
 
@@ -1167,6 +1186,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   } else {
       __NOP();
   }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	for (int i = 0; i < NUM_QUAD; i++){
+		dir_arr[i] = uart_rx_buf[2*i];
+		pwm_arr[i] = uart_rx_buf[2*i + 1];
+	}
+	HAL_UART_Receive_DMA(&huart4, uart_rx_buf, 2);
 }
 /* USER CODE END 4 */
 
