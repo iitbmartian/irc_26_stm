@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "i2C.h"
 #include "uart.h"
+#include "acs.h"
 #include "stepper.h"
 #include "quad_gpio.h"
 /* USER CODE END Includes */
@@ -95,17 +96,17 @@ static void MX_TIM16_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint32_t enc_curr[n_quad] = {0};
-uint32_t enc_prev[n_quad] = {0};
+uint32_t enc_curr[NUM_QUAD] = {0};
+uint32_t enc_prev[NUM_QUAD] = {0};
 
 //_Bool down = 0;
 
-int16_t diff[n_quad] = {0};
-int16_t diff2[n_quad] = {0};
-int16_t diff_prev[n_quad] = {0};
+int16_t diff[NUM_QUAD] = {0};
+int16_t diff2[NUM_QUAD] = {0};
+int16_t diff_prev[NUM_QUAD] = {0};
 
-int32_t pos[n_quad] = {0}; //absolute position
-int32_t dat[3*n_quad];
+int32_t pos[NUM_QUAD] = {0}; //absolute position
+int32_t dat[3*NUM_QUAD];
 
 int16_t gpio_diff = 0;
 int16_t gpio_diff2 = 0;
@@ -118,13 +119,12 @@ int32_t gpio_enc_prev = 0;
 
 int i;
 
-int16_t diffdat[n_quad] = {0};
+int16_t diffdat[NUM_QUAD] = {0};
 
 extern volatile int32_t quad_count;
 extern volatile uint8_t gpio_quad_counting_down;
 
-extern volatile uint32_t adc1_buf[];
-extern volatile uint32_t adc2_buf[];
+extern volatile uint8_t motor_overcurrent_flags[]; //overcurrent flags
 /* USER CODE END 0 */
 
 /**
@@ -177,6 +177,8 @@ int main(void)
   //startup sequence
   HAL_TIM_Base_Start_IT(&htim6); //I2C mux read interupt timer
   Encoder_Init();
+
+  Start_ADC_DMA_All();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -211,25 +213,25 @@ int main(void)
 		pos[i] += diff[i]; //absolute position
 		diff2[i] = diff[i] - diff_prev[i];
 
-		for (int i = 0; i < n_quad; i++){
+		for (int i = 0; i < NUM_QUAD; i++){
 			dat[i] = pos[i];
-			dat[i + n_quad] = diff[i];
-			dat[i + 2*n_quad] = diff2[i];
+			dat[i + NUM_QUAD] = diff[i];
+			dat[i + 2*NUM_QUAD] = diff2[i];
 
 			TxData_buf[4*i] = dat[i]&0x000000FF;
 			TxData_buf[4*i+1] = (dat[i]&0x0000FF00)>>8;
 			TxData_buf[4*i+2] = (dat[i]&0x00FF0000)>>16;
 			TxData_buf[4*i+3] = (dat[i]&0xFF000000)>>24;
 
-			TxData_buf[4*(i+n_quad)] = dat[i+n_quad]&0x000000FF;
-			TxData_buf[4*(i+n_quad)+1] = (dat[i+n_quad]&0x0000FF00)>>8;
-			TxData_buf[4*(i+n_quad)+2] = (dat[i+n_quad]&0x00FF0000)>>16;
-			TxData_buf[4*(i+n_quad)+3] = (dat[i+n_quad]&0xFF000000)>>24;
+			TxData_buf[4*(i+NUM_QUAD)] = dat[i+NUM_QUAD]&0x000000FF;
+			TxData_buf[4*(i+NUM_QUAD)+1] = (dat[i+NUM_QUAD]&0x0000FF00)>>8;
+			TxData_buf[4*(i+NUM_QUAD)+2] = (dat[i+NUM_QUAD]&0x00FF0000)>>16;
+			TxData_buf[4*(i+NUM_QUAD)+3] = (dat[i+NUM_QUAD]&0xFF000000)>>24;
 
-			TxData_buf[4*(i+2*n_quad)] = dat[i+2*n_quad]&0x000000FF;
-			TxData_buf[4*(i+2*n_quad)+1] = (dat[i+2*n_quad]&0x0000FF00)>>8;
-			TxData_buf[4*(i+2*n_quad)+2] = (dat[i+2*n_quad]&0x00FF0000)>>16;
-			TxData_buf[4*(i+2*n_quad)+3] = (dat[i+2*n_quad]&0xFF000000)>>24;
+			TxData_buf[4*(i+2*NUM_QUAD)] = dat[i+2*NUM_QUAD]&0x000000FF;
+			TxData_buf[4*(i+2*NUM_QUAD)+1] = (dat[i+2*NUM_QUAD]&0x0000FF00)>>8;
+			TxData_buf[4*(i+2*NUM_QUAD)+2] = (dat[i+2*NUM_QUAD]&0x00FF0000)>>16;
+			TxData_buf[4*(i+2*NUM_QUAD)+3] = (dat[i+2*NUM_QUAD]&0xFF000000)>>24;
 		}
 
 		gpio_enc_prev = gpio_enc_curr;
@@ -261,23 +263,23 @@ int main(void)
 		gpio_diff2 = gpio_diff - gpio_diff_prev;
 
 		dat[i] = gpio_pos;
-		dat[i + n_quad] = gpio_diff;
-		dat[i + 2*n_quad] = gpio_diff2;
+		dat[i + NUM_QUAD] = gpio_diff;
+		dat[i + 2*NUM_QUAD] = gpio_diff2;
 
 		TxData_buf[4*i+12] = dat[i]&0x000000FF;
 		TxData_buf[4*i+13] = (dat[i]&0x0000FF00)>>8;
 		TxData_buf[4*i+14] = (dat[i]&0x00FF0000)>>16;
 		TxData_buf[4*i+15] = (dat[i]&0xFF000000)>>24;
 
-		TxData_buf[4*(i+n_quad)+12] = dat[i+n_quad]&0x000000FF;
-		TxData_buf[4*(i+n_quad)+13] = (dat[i+n_quad]&0x0000FF00)>>8;
-		TxData_buf[4*(i+n_quad)+14] = (dat[i+n_quad]&0x00FF0000)>>16;
-		TxData_buf[4*(i+n_quad)+15] = (dat[i+n_quad]&0xFF000000)>>24;
+		TxData_buf[4*(i+NUM_QUAD)+12] = dat[i+NUM_QUAD]&0x000000FF;
+		TxData_buf[4*(i+NUM_QUAD)+13] = (dat[i+NUM_QUAD]&0x0000FF00)>>8;
+		TxData_buf[4*(i+NUM_QUAD)+14] = (dat[i+NUM_QUAD]&0x00FF0000)>>16;
+		TxData_buf[4*(i+NUM_QUAD)+15] = (dat[i+NUM_QUAD]&0xFF000000)>>24;
 
-		TxData_buf[4*(i+2*n_quad)+12] = dat[i+2*n_quad]&0x000000FF;
-		TxData_buf[4*(i+2*n_quad)+13] = (dat[i+2*n_quad]&0x0000FF00)>>8;
-		TxData_buf[4*(i+2*n_quad)+14] = (dat[i+2*n_quad]&0x00FF0000)>>16;
-		TxData_buf[4*(i+2*n_quad)+15] = (dat[i+2*n_quad]&0xFF000000)>>24;
+		TxData_buf[4*(i+2*NUM_QUAD)+12] = dat[i+2*NUM_QUAD]&0x000000FF;
+		TxData_buf[4*(i+2*NUM_QUAD)+13] = (dat[i+2*NUM_QUAD]&0x0000FF00)>>8;
+		TxData_buf[4*(i+2*NUM_QUAD)+14] = (dat[i+2*NUM_QUAD]&0x00FF0000)>>16;
+		TxData_buf[4*(i+2*NUM_QUAD)+15] = (dat[i+2*NUM_QUAD]&0xFF000000)>>24;
 
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
 
@@ -411,6 +413,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -419,6 +422,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -427,6 +431,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_6;
   sConfig.Rank = ADC_REGULAR_RANK_4;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -492,6 +497,7 @@ static void MX_ADC2_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
   {
@@ -500,6 +506,7 @@ static void MX_ADC2_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
   {
@@ -508,6 +515,7 @@ static void MX_ADC2_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = ADC_REGULAR_RANK_4;
   if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
   {
@@ -516,6 +524,7 @@ static void MX_ADC2_Init(void)
 
   /** Configure Regular Channel
   */
+  sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_REGULAR_RANK_5;
   if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
   {

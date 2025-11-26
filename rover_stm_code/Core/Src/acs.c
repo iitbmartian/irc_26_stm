@@ -1,138 +1,66 @@
 #include "main.h"
 #include "acs.h"
+#include "uart.h"
 
-//uint16_t adc1_values[4] = {0};
-//uint16_t adc2_values[5] = {0};
-//uint32_t current_ma[8] = {0};
-//uint32_t cap_timestamp[8] = {0};    // Timestamp when PWM was capped (in ms)
-//volatile uint8_t overcurrent_flags[8] = {0};
-//volatile uint8_t current = {0};
-//
-//extern ADC_HandleTypeDef hadc1;
-//extern ADC_HandleTypeDef hadc2;
-//
-//void Read_All_ADC(void){
-//	for(int i =0; i<4; i++){
-//		if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK){ /*Polling which means we are continuously checking if the conversion to a digital value is done
-//		 Waits 100ms before timeout*/
-//			adc1_values[i] = HAL_ADC_GetValue(&hadc1);
-//		}
-//		if (current_ma[i] > Current_Threshold)
-//		{
-//			overcurrent_flags[i] = 1;
-//		}
-//	}
-//
-//	for(int i =0; i<5; i++){
-//		if (HAL_ADC_PollForConversion(&hadc2, 100) == HAL_OK){
-//			adc1_values[i] = HAL_ADC_GetValue(&hadc2);
-//		}
-//		if (current_ma[i + 4] > Current_Threshold){
-//			overcurrent_flags[i + 4] = 1;
-//		}
-//	}
-//}
-//
-//uint32_t Voltage_To_Current(uint16_t adc_val)
-//{
-//    uint32_t current = 10*(adc_val*3/2 - 2.5);
-//    return current;
-//}
-//
-//void Calculate_Current(void){
-//    for (int i = 0; i < 4; i++)
-//    {
-//        current_ma[i] = Voltage_To_Current(adc1_values[i]);
-//
-//        if (current_ma[i] > Current_Threshold)
-//            overcurrent_flags[i] = 1;
-//        else
-//            overcurrent_flags[i] = 0;
-//    }
-//
-//    for (int i = 0; i < 4; i++)
-//    {
-//        current_ma[i + 4] = Voltage_To_Current(adc2_values[i]);
-//
-//        if (current_ma[i + 4] > Current_Threshold)
-//            overcurrent_flags[i + 4] = 1;
-//        else
-//            overcurrent_flags[i + 4] = 0;
-//    }
-//}
-//
-//void Update_Cap_Timers(void)
-//{
-//    uint32_t current_time = HAL_GetTick();  // Get current system time in ms
-//
-//    for (int i = 0; i < 8; i++)
-//    {
-//        if (cap_timestamp[i] != 0)
-//        {
-//            if ((current_time - cap_timestamp[i]) >= CAP_DURATION)
-//            {
-//                cap_timestamp[i] = 0;   // Clear timestamp
-//            }
-//        }
-//    }
-//}
-//
-//void Set_Cap_Timestamp(uint8_t channel)
-//{
-//    cap_timestamp[channel] = HAL_GetTick();
-//}
+extern ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc2;
 
-volatile uint32_t adc1_buf[4];
-volatile uint32_t adc2_buf[5];
+extern uint8_t TxData_buf[]; //extern TxData_buf in uart code
 
-uint32_t sequence_adc1[4] = {
-    ADC_CHANNEL_1,
-    ADC_CHANNEL_2,
-    ADC_CHANNEL_3,
-    ADC_CHANNEL_6
-};
+//TxData_buf[0] to TxData_buf[12*NUM_QUAD + 12 + 2*NUM_ENCODER - 1] are used already, start recording from index [12*NUM_QUAD + 12 + 2*NUM_ENCODER]
 
-uint32_t sequence_adc2[5] = {
-    ADC_CHANNEL_1,
-    ADC_CHANNEL_2,
-    ADC_CHANNEL_3,
-    ADC_CHANNEL_4,
-    ADC_CHANNEL_11
-};
+//For ADC, Vout = current*0.1 + 2.5 volts
+// V to ADC = (current*0.1 + 2.5) * 1/3
+// ADC input is 0 at 0 Volt and 4096 at 3.3 volts
+// At current max we want ADC cut as:
 
-void ADC1_StartSequence(void)
+uint16_t adc_cut_value = (uint16_t)((Current_Threshold*0.1f + 2.5f)/3.0f)*(ADC_MAX_VALUE/3.3f);
+
+volatile uint8_t motor_overcurrent_flags[NUM_ACS] = {0};
+volatile uint32_t motor_overcurrent_timestamp[NUM_ACS] = {0};
+
+uint32_t adc1_buf[4];
+uint32_t adc2_buf[5];
+
+void Start_ADC_DMA_All(void)
 {
-    current_adc1_index = 0;
-    ADC1_SetChannel(sequence_adc1[current_adc1_index]);
-    HAL_ADC_Start_DMA(&hadc1, &adc1_buf[current_adc1_index], 1);
-}
+    HAL_ADC_Start_DMA(&hadc1, adc1_buf, 4);
+    HAL_ADC_Start_DMA(&hadc2, adc2_buf, 5);
 
-void ADC2_StartSequence(void)
-{
-    current_adc2_index = 0;
-    ADC2_SetChannel(sequence_adc2[current_adc2_index]);
-    HAL_ADC_Start_DMA(&hadc2, &adc2_buf[current_adc2_index], 1);
-}
-
-void ADC1_SetChannel(uint32_t channel)
-{
-    ADC_ChannelConfTypeDef s = {0};
-    s.Channel = channel;
-    s.Rank = 1;
-    s.SamplingTime = ADC_SAMPLETIME_28CYCLES_5;
-    HAL_ADC_ConfigChannel(&hadc1, &s);
-}
-
-void ADC2_SetChannel(uint32_t channel)
-{
-    ADC_ChannelConfTypeDef s = {0};
-    s.Channel = channel;
-    s.Rank = 1;
-    s.SamplingTime = ADC_SAMPLETIME_28CYCLES_5;
-    HAL_ADC_ConfigChannel(&hadc2, &s);
+    // Start_ADC_DMA_All(); --> might need cyclic nature
 }
 
 
+//Timer callback in stepper.c since the callback function must be unique
+void ADC_Reading(void)
+{
+	for(int i = 0; i < 9; i++)
+	{
+	    if(HAL_GetTick() - motor_overcurrent_timestamp[i] > CAP_DURATION){
+	    	motor_overcurrent_flags[i] = 0;
+	    }
+	}
+
+	for(int i = 0 ; i < 4; i++)
+	{
+		uint16_t val = adc1_buf[i];
+		TxData_buf[12*NUM_QUAD + 12 + 2*NUM_ENCODERS + 2*i] = ((val >> 8) & 0xFF); //high byte
+		TxData_buf[12*NUM_QUAD + 12 + 2*NUM_ENCODERS + 2*i + 1] = (val & 0xFF); //low byte
+		if((val > adc_cut_value) && (motor_overcurrent_flags[i] == 0)){
+			motor_overcurrent_flags[i] = 1;
+			motor_overcurrent_timestamp[i] = HAL_GetTick(); //milliseconds from startup
+		}
+	}
+	for(int i = 0 ; i < 5 ; i ++){
+		uint16_t val = adc2_buf[i];
+		TxData_buf[12*NUM_QUAD + 12 + 2*NUM_ENCODERS + 8 + 2*i] = ((val >> 8) & 0xFF); //high byte
+		TxData_buf[12*NUM_QUAD + 12 + 2*NUM_ENCODERS + 8 + 2*i + 1] = (val & 0xFF); //low byte
+		if((val > adc_cut_value) && (motor_overcurrent_flags[i+4] == 0)){
+			motor_overcurrent_flags[i + 4] = 1;
+			motor_overcurrent_timestamp[i + 4] = HAL_GetTick(); //milliseconds from startup
+		}
+	}
+}
 
 
 

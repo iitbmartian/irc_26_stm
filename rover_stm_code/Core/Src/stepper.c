@@ -68,7 +68,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
 
     if(htim -> Instance == TIM16){
-    	Read_All_ADC();
+    	ADC_Reading();
     }
 }
 

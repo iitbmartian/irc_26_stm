@@ -9,9 +9,11 @@
 
 #include "main.h"
 
-#define n_quad 1
+#define NUM_QUAD 1 //number of quadrature on timers
+#define NUM_ENCODERS 1 //number of AS5600 encoders (1 for testing, 6 in reality)
+#define NUM_ACS 9 //4 in adc1 and 5 in adc2
 #define data_in_length 12 //input byte array
-#define data_out_length 2 + 12*n_quad + 12//2*(magnetic encoder number) bytes of encoder feed xx.xx degrees
+#define data_out_length 2 + 12*NUM_QUAD + 12 + 2*NUM_ACS //2*(magnetic encoder number) bytes of encoder feed xx.xx degrees
 
 void UART_DMA_START(void);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
