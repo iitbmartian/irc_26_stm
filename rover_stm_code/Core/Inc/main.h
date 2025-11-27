@@ -31,6 +31,12 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "i2C.h"
+#include "uart.h"
+#include "acs.h"
+#include "stepper.h"
+#include "quad_gpio.h"
+#include "enc_poll.h"
 
 /* USER CODE END Includes */
 

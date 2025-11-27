@@ -21,11 +21,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "i2C.h"
-#include "uart.h"
-#include "acs.h"
-#include "stepper.h"
-#include "quad_gpio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -97,8 +92,26 @@ static void MX_TIM16_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint32_t enc_curr[NUM_QUAD] = {0};
-uint32_t enc_prev[NUM_QUAD] = {0};
+extern uint32_t enc_curr[NUM_QUAD];
+extern uint32_t enc_prev[NUM_QUAD];
+
+extern int16_t diff[NUM_QUAD];
+extern int16_t diff2[NUM_QUAD];
+extern int16_t diff_prev[NUM_QUAD];
+
+//drill encoder
+extern int16_t gpio_diff;
+extern int16_t gpio_diff2;
+extern int16_t gpio_diff_prev;
+
+extern int32_t gpio_pos;
+extern int32_t gpio_enc_curr; //absolute position
+extern int32_t gpio_enc_prev;
+
+
+extern int32_t pos[NUM_QUAD]; //absolute position
+extern int32_t dat[3*NUM_QUAD];
+
 
 uint8_t uart_rx_buf[2];
 volatile uint8_t pwm_arr[1];
@@ -106,22 +119,6 @@ uint16_t pwm_out[1];
 volatile _Bool dir_arr[1];
 
 //_Bool down = 0;
-
-int16_t diff[NUM_QUAD] = {0};
-int16_t diff2[NUM_QUAD] = {0};
-int16_t diff_prev[NUM_QUAD] = {0};
-
-int32_t pos[NUM_QUAD] = {0}; //absolute position
-int32_t dat[3*NUM_QUAD];
-
-int16_t gpio_diff = 0;
-int16_t gpio_diff2 = 0;
-int16_t gpio_diff_prev = 0;
-
-int32_t gpio_pos = 0;
-int32_t gpio_enc_curr = 0; //absolute position
-int32_t gpio_enc_prev = 0;
-
 
 int i;
 
@@ -201,101 +198,11 @@ int main(void)
 			PCA9685_MOTOR_SetPWM(0, 0, pwm_out[i]);
 			HAL_GPIO_WritePin(DIR1_GPIO_Port, DIR1_Pin, dir_arr[i]);
 		}
-		enc_prev[i] = enc_curr[i];
-		diff_prev[i] = diff[i];
 
-		enc_curr[i] = __HAL_TIM_GET_COUNTER(&htim2);
-		if (__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2)){//should give negative diff
-			if (enc_curr[i] == enc_prev[i]){ //zero
-				diff[i] = 0;
-			} else if (enc_curr[i] < enc_prev[i]){ //normal
-				diff[i] = enc_curr[i] - enc_prev[i];
-			}
-			else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
-				diff[i] = -(__HAL_TIM_GET_AUTORELOAD(&htim2) - enc_curr[i] + enc_prev[i]);
-			}
-		}
-		else{//should positive diff
-			if (enc_curr[i] == enc_prev[i]){ //zero
-				diff[i] = 0;
-			} else if (enc_curr[i] > enc_prev[i]){ //normal
-				diff[i] = enc_curr[i] - enc_prev[i];
-			}
-			else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
-				diff[i] = __HAL_TIM_GET_AUTORELOAD(&htim2) + enc_curr[i] - enc_prev[i];
-			}
-		}
-
-		pos[i] += diff[i]; //absolute position
-		diff2[i] = diff[i] - diff_prev[i];
-
-		for (int i = 0; i < NUM_QUAD; i++){
-			dat[i] = pos[i];
-			dat[i + NUM_QUAD] = diff[i];
-			dat[i + 2*NUM_QUAD] = diff2[i];
-
-			TxData_buf[4*i] = dat[i]&0x000000FF;
-			TxData_buf[4*i+1] = (dat[i]&0x0000FF00)>>8;
-			TxData_buf[4*i+2] = (dat[i]&0x00FF0000)>>16;
-			TxData_buf[4*i+3] = (dat[i]&0xFF000000)>>24;
-
-			TxData_buf[4*(i+NUM_QUAD)] = dat[i+NUM_QUAD]&0x000000FF;
-			TxData_buf[4*(i+NUM_QUAD)+1] = (dat[i+NUM_QUAD]&0x0000FF00)>>8;
-			TxData_buf[4*(i+NUM_QUAD)+2] = (dat[i+NUM_QUAD]&0x00FF0000)>>16;
-			TxData_buf[4*(i+NUM_QUAD)+3] = (dat[i+NUM_QUAD]&0xFF000000)>>24;
-
-			TxData_buf[4*(i+2*NUM_QUAD)] = dat[i+2*NUM_QUAD]&0x000000FF;
-			TxData_buf[4*(i+2*NUM_QUAD)+1] = (dat[i+2*NUM_QUAD]&0x0000FF00)>>8;
-			TxData_buf[4*(i+2*NUM_QUAD)+2] = (dat[i+2*NUM_QUAD]&0x00FF0000)>>16;
-			TxData_buf[4*(i+2*NUM_QUAD)+3] = (dat[i+2*NUM_QUAD]&0xFF000000)>>24;
-		}
-
-		gpio_enc_prev = gpio_enc_curr;
-		gpio_diff_prev = gpio_diff;
-
-		gpio_enc_curr = quad_count;
-		if (gpio_quad_counting_down){//should give negative diff
-			if (gpio_enc_curr == gpio_enc_prev){ //zero
-				gpio_diff = 0;
-			} else if (gpio_enc_curr < gpio_enc_prev){ //normal
-				gpio_diff = gpio_enc_curr - gpio_enc_prev;
-			}
-			else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
-				gpio_diff = -(quad_count - gpio_enc_curr + gpio_enc_prev);
-			}
-		}
-		else{//should positive diff
-			if (gpio_enc_curr == gpio_enc_prev){ //zero
-				gpio_diff = 0;
-			} else if (gpio_enc_curr > gpio_enc_prev){ //normal
-				gpio_diff = gpio_enc_curr - gpio_enc_prev;
-			}
-			else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
-				gpio_diff = quad_count + gpio_enc_curr - gpio_enc_prev;
-			}
-		}
-
-		gpio_pos += gpio_diff; //absolute position
-		gpio_diff2 = gpio_diff - gpio_diff_prev;
-
-		dat[i] = gpio_pos;
-		dat[i + NUM_QUAD] = gpio_diff;
-		dat[i + 2*NUM_QUAD] = gpio_diff2;
-
-		TxData_buf[4*i+12] = dat[i]&0x000000FF;
-		TxData_buf[4*i+13] = (dat[i]&0x0000FF00)>>8;
-		TxData_buf[4*i+14] = (dat[i]&0x00FF0000)>>16;
-		TxData_buf[4*i+15] = (dat[i]&0xFF000000)>>24;
-
-		TxData_buf[4*(i+NUM_QUAD)+12] = dat[i+NUM_QUAD]&0x000000FF;
-		TxData_buf[4*(i+NUM_QUAD)+13] = (dat[i+NUM_QUAD]&0x0000FF00)>>8;
-		TxData_buf[4*(i+NUM_QUAD)+14] = (dat[i+NUM_QUAD]&0x00FF0000)>>16;
-		TxData_buf[4*(i+NUM_QUAD)+15] = (dat[i+NUM_QUAD]&0xFF000000)>>24;
-
-		TxData_buf[4*(i+2*NUM_QUAD)+12] = dat[i+2*NUM_QUAD]&0x000000FF;
-		TxData_buf[4*(i+2*NUM_QUAD)+13] = (dat[i+2*NUM_QUAD]&0x0000FF00)>>8;
-		TxData_buf[4*(i+2*NUM_QUAD)+14] = (dat[i+2*NUM_QUAD]&0x00FF0000)>>16;
-		TxData_buf[4*(i+2*NUM_QUAD)+15] = (dat[i+2*NUM_QUAD]&0xFF000000)>>24;
+		timer_quad_poll();
+		timer_update_TX();
+		drill_quad_poll();
+		drill_update_TX();
 
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
 
@@ -706,7 +613,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 65535;
+  htim1.Init.Period = 5281;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -757,7 +664,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 65535;
+  htim2.Init.Period = 5281;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
@@ -806,7 +713,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 65535;
+  htim3.Init.Period = 5281;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
@@ -855,7 +762,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 65535;
+  htim4.Init.Period = 5281;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
@@ -980,7 +887,7 @@ static void MX_TIM8_Init(void)
   htim8.Instance = TIM8;
   htim8.Init.Prescaler = 0;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 65535;
+  htim8.Init.Period = 5281;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim8.Init.RepetitionCounter = 0;
   htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
