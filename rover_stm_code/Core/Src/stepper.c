@@ -55,10 +55,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			step_pulse = !step_pulse;
 			HAL_GPIO_WritePin(PULSE1_GPIO_Port, PULSE1_Pin, step_pulse);
 			HAL_GPIO_WritePin(PULSE2_GPIO_Port, PULSE2_Pin, step_pulse);
+
+			PCA9685_MOTOR_SetPWM(13, 0, 4095); //always on
+			PCA9685_MOTOR_SetPWM(14, 0, 4095);
 		}
 		else{
 			HAL_GPIO_WritePin(PULSE1_GPIO_Port, PULSE1_Pin, 0);
 			HAL_GPIO_WritePin(PULSE2_GPIO_Port, PULSE2_Pin, 0);
+
+			PCA9685_MOTOR_SetPWM(13, 4094, 4095); //always off
+			PCA9685_MOTOR_SetPWM(14, 4094, 4095);
 		}
 	}
 

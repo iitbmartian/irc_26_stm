@@ -112,7 +112,6 @@ extern int32_t gpio_enc_prev;
 extern int32_t pos[NUM_QUAD]; //absolute position
 extern int32_t dat[3*NUM_QUAD];
 
-
 uint8_t uart_rx_buf[2];
 volatile uint8_t pwm_arr[1];
 uint16_t pwm_out[1];

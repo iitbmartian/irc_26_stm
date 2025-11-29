@@ -6,6 +6,7 @@ extern TIM_HandleTypeDef htim6;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 extern uint8_t TxData_buf[]; //extern TxData_buf in uart code
+extern _Bool rotate;
 
 extern volatile uint8_t motor_overcurrent_flags[]; //overflow value
 
