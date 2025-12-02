@@ -36,33 +36,35 @@ int32_t pos[NUM_QUAD] = {0}; //absolute position
 int32_t dat[3*NUM_QUAD];
 
 void timer_quad_poll(){
-	enc_prev[i] = enc_curr[i];
-	diff_prev[i] = diff[i];
+	for (int i = 0; i < NUM_QUAD; i++){
+		enc_prev[i] = enc_curr[i];
+		diff_prev[i] = diff[i];
 
-	enc_curr[i] = __HAL_TIM_GET_COUNTER(&htim2);
-	if (__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2)){//should give negative diff
-		if (enc_curr[i] == enc_prev[i]){ //zero
-			diff[i] = 0;
-		} else if (enc_curr[i] < enc_prev[i]){ //normal
-			diff[i] = enc_curr[i] - enc_prev[i];
+		enc_curr[i] = __HAL_TIM_GET_COUNTER(&htim2);
+		if (__HAL_TIM_IS_TIM_COUNTING_DOWN(&htim2)){//should give negative diff
+			if (enc_curr[i] == enc_prev[i]){ //zero
+				diff[i] = 0;
+			} else if (enc_curr[i] < enc_prev[i]){ //normal
+				diff[i] = enc_curr[i] - enc_prev[i];
+			}
+			else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
+				diff[i] = -(__HAL_TIM_GET_AUTORELOAD(&htim2) - enc_curr[i] + enc_prev[i]);
+			}
 		}
-		else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
-			diff[i] = -(__HAL_TIM_GET_AUTORELOAD(&htim2) - enc_curr[i] + enc_prev[i]);
+		else{//should positive diff
+			if (enc_curr[i] == enc_prev[i]){ //zero
+				diff[i] = 0;
+			} else if (enc_curr[i] > enc_prev[i]){ //normal
+				diff[i] = enc_curr[i] - enc_prev[i];
+			}
+			else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
+				diff[i] = __HAL_TIM_GET_AUTORELOAD(&htim2) + enc_curr[i] - enc_prev[i];
+			}
 		}
-	}
-	else{//should positive diff
-		if (enc_curr[i] == enc_prev[i]){ //zero
-			diff[i] = 0;
-		} else if (enc_curr[i] > enc_prev[i]){ //normal
-			diff[i] = enc_curr[i] - enc_prev[i];
-		}
-		else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
-			diff[i] = __HAL_TIM_GET_AUTORELOAD(&htim2) + enc_curr[i] - enc_prev[i];
-		}
-	}
 
-	pos[i] += diff[i]; //absolute position
-	diff2[i] = diff[i] - diff_prev[i];
+		pos[i] += diff[i]; //absolute position
+		diff2[i] = diff[i] - diff_prev[i];
+	}
 }
 
 void timer_update_TX(){

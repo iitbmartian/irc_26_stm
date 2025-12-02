@@ -127,6 +127,10 @@ extern volatile int32_t quad_count;
 extern volatile uint8_t gpio_quad_counting_down;
 
 extern volatile uint8_t motor_overcurrent_flags[]; //overcurrent flags
+
+GPIO_TypeDef * const dir_port_arr[NUM_MOTORS] = {DIR1_GPIO_Port, DIR2_GPIO_Port};
+uint16_t const dir_pin_arr[NUM_MOTORS] = {DIR1_Pin, DIR2_Pin};
+
 /* USER CODE END 0 */
 
 /**
@@ -191,11 +195,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		for (int i= 0; i < NUM_QUAD; i++){
+		for (int i= 0; i < NUM_MOTORS; i++){
 			pwm_out[i] = pwm_arr[i];
 			pwm_out[i] = pwm_out[i] << 4;
-			PCA9685_MOTOR_SetPWM(0, 0, pwm_out[i]);
-			HAL_GPIO_WritePin(DIR1_GPIO_Port, DIR1_Pin, dir_arr[i]);
+			PCA9685_MOTOR_SetPWM(i, 0, pwm_out[i]);
+			HAL_GPIO_WritePin(dir_port_arr[i], dir_pin_arr[i], dir_arr[i]);
 		}
 
 		timer_quad_poll();
