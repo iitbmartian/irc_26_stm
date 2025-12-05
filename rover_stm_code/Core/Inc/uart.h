@@ -14,7 +14,7 @@
 #define NUM_MOTORS 2
 #define NUM_ACS 9 //4 in adc1 and 5 in adc2
 #define data_in_length 12 //input byte array
-#define data_out_length 2 + 12*NUM_QUAD + 12 + 2*NUM_ACS //2*(magnetic encoder number) bytes of encoder feed xx.xx degrees
+#define data_out_length 2*NUM_ENCODERS + 12*NUM_QUAD + 12 + 2*NUM_ACS //2*(magnetic encoder number) bytes of encoder feed xx.xx degrees
 
 void UART_DMA_START(void);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
