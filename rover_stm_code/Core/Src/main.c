@@ -188,7 +188,7 @@ int main(void)
   PCA9685_MOTOR_SetFrequency(1000);
   PCA9685_MOTOR_SetPWM(0, 0, 1200);
 
-  HAL_UART_Receive_DMA (&huart4, uart_rx_buf, 2);
+  HAL_UART_Receive_DMA (&huart4, uart_rx_buf, 2 * NUM_MOTORS);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -198,6 +198,7 @@ int main(void)
 		for (int i= 0; i < NUM_MOTORS; i++){
 			pwm_out[i] = pwm_arr[i];
 			pwm_out[i] = pwm_out[i] << 4;
+//			pwm_out[i] = 2000;
 			PCA9685_MOTOR_SetPWM(i, 0, pwm_out[i]);
 			HAL_GPIO_WritePin(dir_port_arr[i], dir_pin_arr[i], dir_arr[i]);
 		}
@@ -209,7 +210,7 @@ int main(void)
 
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
 
-		HAL_Delay(100); // delay between magnetic encoder data
+		HAL_Delay(10); // delay between magnetic encoder data
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -1100,11 +1101,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	for (int i = 0; i < NUM_QUAD; i++){
+	for (int i = 0; i < NUM_MOTORS; i++){
 		dir_arr[i] = uart_rx_buf[2*i];
 		pwm_arr[i] = uart_rx_buf[2*i + 1];
 	}
-	HAL_UART_Receive_DMA(&huart4, uart_rx_buf, 2);
+	HAL_UART_Receive_DMA(&huart4, uart_rx_buf, 2 * NUM_MOTORS);
 }
 /* USER CODE END 4 */
 

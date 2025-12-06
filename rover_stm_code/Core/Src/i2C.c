@@ -44,13 +44,13 @@ float RawToDegrees(uint16_t raw){
 
 void PCA9685_MOTOR_Init(void) {
     uint8_t mode1 = 0x00;
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &mode1, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &mode1, 1, HAL_MAX_DELAY);
     HAL_Delay(3);
 }
 
 void PCA9685_CAM_Init(void) {
     uint8_t mode1 = 0x00;
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &mode1, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &mode1, 1, HAL_MAX_DELAY);
     HAL_Delay(3);
 }
 
@@ -72,18 +72,18 @@ void Encoder_ReadValues(void){
 		break;
 	case STATE_SELECT_CHANNEL:
 		tx_data[0] = (1 << current_channel); //select k channel: give k << 1
-		if(HAL_I2C_Master_Transmit_IT(&hi2c2, TCA9548A_ADDRESS, tx_data,1) == HAL_OK){ //non_blocking reading of angle. send pointer of data buffer tx_data and send 1 byte. also check for HAL_OK return
+		if(HAL_I2C_Master_Transmit_IT(&hi2c1, TCA9548A_ADDRESS, tx_data,1) == HAL_OK){ //non_blocking reading of angle. send pointer of data buffer tx_data and send 1 byte. also check for HAL_OK return
 			current_state = STATE_WRITE_REG;
 		}
 		break;
 	case STATE_WRITE_REG:
 		tx_data[0] = AS5600_ANGLE_H;
-		if(HAL_I2C_Master_Transmit_IT(&hi2c2, AS5600_ADDRESS, tx_data, 1) == HAL_OK){
+		if(HAL_I2C_Master_Transmit_IT(&hi2c1, AS5600_ADDRESS, tx_data, 1) == HAL_OK){
 			current_state = STATE_READ_DATA;
 		}
 		break;
 	case STATE_READ_DATA:
-		if(HAL_I2C_Master_Receive_IT(&hi2c2, AS5600_ADDRESS, rx_data, 2) == HAL_OK){
+		if(HAL_I2C_Master_Receive_IT(&hi2c1, AS5600_ADDRESS, rx_data, 2) == HAL_OK){
 			current_state = STATE_NEXT_ENCODER;
 		}
 		break;
@@ -123,16 +123,16 @@ void PCA9685_MOTOR_SetFrequency(uint16_t freq) {
     uint8_t prescale = (uint8_t)(25000000.0 / (4096 * freq) - 1);
 
     uint8_t oldmode;
-    HAL_I2C_Mem_Read(&hi2c1, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &oldmode, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Read(&hi2c2, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &oldmode, 1, HAL_MAX_DELAY);
 
     uint8_t newmode = (oldmode & 0x7F) | 0x10; // Sleep (make reset 0 and sleep bit 1)
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &newmode, 1, HAL_MAX_DELAY);
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_MOTOR, PCA9685_PRESCALE, 1, &prescale, 1, HAL_MAX_DELAY);
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &oldmode, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &newmode, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_MOTOR, PCA9685_PRESCALE, 1, &prescale, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &oldmode, 1, HAL_MAX_DELAY);
     HAL_Delay(3);
 
     uint8_t mode = oldmode | 0xA0; // Auto-increment
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &mode, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_MOTOR, PCA9685_MODE1, 1, &mode, 1, HAL_MAX_DELAY);
 }
 
 
@@ -140,16 +140,16 @@ void PCA9685_CAM_SetFrequency(uint16_t freq) {
     uint8_t prescale = (uint8_t)(25000000.0 / (4096 * freq) - 1);
 
     uint8_t oldmode;
-    HAL_I2C_Mem_Read(&hi2c1, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &oldmode, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Read(&hi2c2, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &oldmode, 1, HAL_MAX_DELAY);
 
     uint8_t newmode = (oldmode & 0x7F) | 0x10; // Sleep (make reset 0 and sleep bit 1)
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &newmode, 1, HAL_MAX_DELAY);
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_CAM, PCA9685_PRESCALE, 1, &prescale, 1, HAL_MAX_DELAY);
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &oldmode, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &newmode, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_CAM, PCA9685_PRESCALE, 1, &prescale, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &oldmode, 1, HAL_MAX_DELAY);
     HAL_Delay(3);
 
     uint8_t mode = oldmode | 0xA0; // Auto-increment
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &mode, 1, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_CAM, PCA9685_MODE1, 1, &mode, 1, HAL_MAX_DELAY);
 }
 
 //on is count out of 4095 on which rising edge occurs, off is count on which falling edge occurs (both are uint16_t).
@@ -161,7 +161,7 @@ void PCA9685_MOTOR_SetPWM(uint8_t channel, uint16_t on, uint16_t off) {
     data[2] = off & 0xFF; //last 8 bits on LED_OFF_L
     data[3] = off >> 8; //top 8 (last 4 of those) on LED_OFF_H
 
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_MOTOR, PCA9685_LED0_ON_L + 4*channel, 1, data, 4, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_MOTOR, PCA9685_LED0_ON_L + 4*channel, 1, data, 4, HAL_MAX_DELAY);
 }
 
 // Set PWM on a channel (0-15)
@@ -172,7 +172,7 @@ void PCA9685_CAM_SetPWM(uint8_t channel, uint16_t on, uint16_t off) {
     data[2] = off & 0xFF; //last 8 bits on LED_OFF_L
     data[3] = off >> 8; //top 8 (last 4 of those) on LED_OFF_H
 
-    HAL_I2C_Mem_Write(&hi2c1, PCA9685_ADDRESS_CAM, PCA9685_LED0_ON_L + 4*channel, 1, data, 4, HAL_MAX_DELAY);
+    HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_CAM, PCA9685_LED0_ON_L + 4*channel, 1, data, 4, HAL_MAX_DELAY);
 }
 
 //I2C2 for encoder callback functions
