@@ -211,7 +211,7 @@ int main(void)
 		TxData_buf[data_out_length-1] = '\n';
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
 
-		HAL_Delay(100); // delay between magnetic encoder data
+		HAL_Delay(10); // delay between magnetic encoder data
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

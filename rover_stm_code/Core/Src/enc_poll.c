@@ -25,6 +25,7 @@ uint32_t enc_prev[NUM_QUAD] = {0};
 int16_t diff[NUM_QUAD] = {0};
 int16_t diff2[NUM_QUAD] = {0};
 int16_t diff_prev[NUM_QUAD] = {0};
+int16_t MAX_THINGY[NUM_QUAD];
 
 //drill encoder
 extern volatile int32_t quad_count;
@@ -40,8 +41,6 @@ int32_t gpio_enc_prev = 0;
 
 
 int32_t pos[NUM_QUAD] = {0}; //absolute position
-int32_t dat[3*NUM_QUAD];
-int32_t drill_dat[3] = {0};
 
 void timer_quad_poll(){
 	for (int i = 0; i < NUM_QUAD; i++){
@@ -49,41 +48,26 @@ void timer_quad_poll(){
 		diff_prev[i] = diff[i];
 
 		enc_curr[i] = (__HAL_TIM_GET_COUNTER(tim_arr[i]));
-		if (__HAL_TIM_IS_TIM_COUNTING_DOWN(tim_arr[i])){//should give negative diff
-			if (enc_curr[i] == enc_prev[i]){ //zero
-				diff[i] = 0;
-			} else if (enc_curr[i] < enc_prev[i]){ //normal
-				diff[i] = enc_curr[i] - enc_prev[i];
-			}
-			else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
-				diff[i] = -(__HAL_TIM_GET_AUTORELOAD(tim_arr[i]) - enc_curr[i] + enc_prev[i]);
-			}
-		}
-		else{//should positive diff
-			if (enc_curr[i] == enc_prev[i]){ //zero
-				diff[i] = 0;
-			} else if (enc_curr[i] > enc_prev[i]){ //normal
-				diff[i] = enc_curr[i] - enc_prev[i];
-			}
-			else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
-				diff[i] = __HAL_TIM_GET_AUTORELOAD(tim_arr[i]) + enc_curr[i] - enc_prev[i];
-			}
+
+		diff[i] = enc_curr[i] - enc_prev[i];
+
+		MAX_THINGY[i] = __HAL_TIM_GET_AUTORELOAD(&htim2);
+
+		if (diff[i] > MAX_THINGY[i] / 2) {
+			diff[i] -= MAX_THINGY[i];
 		}
 
-		diff[i] = diff[i];
+		if (diff[i] < -MAX_THINGY[i] / 2) {
+			diff[i] += MAX_THINGY[i];
+		}
 
-//		pos[i] += diff[i]; //absolute position
-		pos[i] = enc_curr[i];
+		pos[i] += diff[i]; //absolute position
 		diff2[i] = diff[i] - diff_prev[i];
 	}
 }
 
 void timer_update_TX(){
 	for (int i = 0; i < NUM_QUAD; i++){
-//		dat[i] = pos[i];
-//		dat[i + 1] = diff[i];
-//		dat[i + 2] = diff2[i];
-
 		TxData_buf[12*i] = (pos[i]&0xFF000000)>>24;
 		TxData_buf[12*i+1] = (pos[i]&0x00FF0000)>>16;
 		TxData_buf[12*i+2] = (pos[i]&0x0000FF00)>>8;
@@ -133,11 +117,6 @@ void drill_quad_poll(){
 }
 
 void drill_update_TX(){
-
-//	drill_dat[0] = gpio_pos;
-//	drill_dat[1] = gpio_diff;
-//	gpio_diff2 = gpio_diff2;
-
 	TxData_buf[12*NUM_QUAD] = (gpio_pos&0xFF000000)>>24;
 	TxData_buf[12*NUM_QUAD+1] = (gpio_pos&0x00FF0000)>>16;
 	TxData_buf[12*NUM_QUAD+2] = (gpio_pos&0x0000FF00)>>8;
