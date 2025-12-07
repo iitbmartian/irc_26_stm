@@ -5,7 +5,7 @@ import numpy as np
 n_quad = 5
 n_enc = 1
 n_acs = 9
-n_motors = 1 #13
+n_motors = 2 #13
 #8*explicit + 2*drill + 1*Linear base + 2*BLDC 
 
 quad_data = []
@@ -77,9 +77,9 @@ def get_uart_data():
     print(data, len(data))
     for i in range(n_quad+1):
         base = 12 * i
-        pos = int.from_bytes(data[base:base + 4], byteorder='little', signed=True)
-        diff = int.from_bytes(data[base + 4:base + 8], byteorder='little', signed=True)
-        diff2 = int.from_bytes(data[base + 8:base + 12], byteorder='little', signed=True)
+        pos = int.from_bytes(data[base:base + 4], byteorder='big', signed=True)
+        diff = int.from_bytes(data[base + 4:base + 8], byteorder='big', signed=True)
+        diff2 = int.from_bytes(data[base + 8:base + 12], byteorder='big', signed=True)
         # print(np.int32(pos), np.int32(diff), np.int32(diff2))
         polled_frame["quadrature"].append(((np.int32(pos), np.int32(diff), np.int32(diff2))))
     for i in range(n_enc):
@@ -101,9 +101,10 @@ def get_uart_data():
 
 #if __name__ == "main":
 i = 0
-kp = 0.1
+kp = 0.5
+pwmout = 0
 enc_data = {
-    "quadrature": [0]*n_quad,
+    "quadrature": [(0,0,0)]*n_quad,
     "AS5600": [0]*n_enc,
     "ACS": [0]*n_acs
 }
@@ -115,13 +116,13 @@ while True:
             print(entry, enc_data[entry])
     except Exception as e:
         print(e)
-    
-    pwmout = kp*(300 - enc_data["ACS"][0])
+    print(enc_data["quadrature"])
+    pwmout += kp*(80 - enc_data["quadrature"][1][1])
     
     dir = int(pwmout < 0)
     pwmout = abs(pwmout)
-    # print(dir, pwmout)
-    # send_uart_data([dir], [pwmout])
+    print(dir, pwmout)
+    send_uart_data([dir, 0], [pwmout, 0])
 
     time.sleep(1)
     
