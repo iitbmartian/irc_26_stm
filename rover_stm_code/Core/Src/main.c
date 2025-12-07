@@ -186,7 +186,7 @@ int main(void)
   Start_ADC_DMA_All();
   PCA9685_MOTOR_Init();
   PCA9685_MOTOR_SetFrequency(1000);
-  PCA9685_MOTOR_SetPWM(0, 0, 1200);
+  PCA9685_MOTOR_SetPWM(0, 0, 0);
 
   HAL_UART_Receive_DMA (&huart4, uart_rx_buf, 2 * NUM_MOTORS);
   /* USER CODE END 2 */
@@ -208,6 +208,7 @@ int main(void)
 		drill_quad_poll();
 		drill_update_TX();
 
+		TxData_buf[data_out_length-1] = '\n';
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
 
 		HAL_Delay(10); // delay between magnetic encoder data
