@@ -179,7 +179,7 @@ void PCA9685_CAM_SetPWM(uint8_t channel, uint16_t on, uint16_t off) {
 //automatic callback Tx
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-    if (hi2c->Instance == I2C2) {
+    if (hi2c->Instance == I2C1) {
         Encoder_ReadValues();  // re-run case statement function
     }
 }
@@ -187,7 +187,7 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 //automatic callback Rx
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-    if (hi2c->Instance == I2C2) {
+    if (hi2c->Instance == I2C1) {
         Encoder_ReadValues();  // re-run case statement function
     }
 }
