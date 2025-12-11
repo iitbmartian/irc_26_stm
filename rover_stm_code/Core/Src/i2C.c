@@ -23,15 +23,15 @@ typedef enum {
     STATE_NEXT_ENCODER
 } EncoderState_t;
 
-static EncoderState_t current_state = STATE_IDLE;
-static uint8_t current_channel = 0;
+volatile EncoderState_t current_state = STATE_IDLE;
+volatile uint8_t current_channel = 0;
 
 //Data from I2C
-static uint8_t tx_data[2];
-static uint8_t rx_data[2];
+volatile uint8_t tx_data[2];
+volatile uint8_t rx_data[2];
 
 //I2C busy check
-static volatile uint8_t i2C_busy = 0;
+volatile uint8_t i2C_busy = 0;
 volatile uint8_t encoder_ready_flag = 0;
 volatile uint16_t raw_angle;
 
@@ -69,11 +69,16 @@ void Encoder_StartReading(void){
 void Encoder_ReadValues(void){
 	switch(current_state){
 	case STATE_IDLE:
+		current_state = STATE_SELECT_CHANNEL;
 		break;
 	case STATE_SELECT_CHANNEL:
 		tx_data[0] = (1 << current_channel); //select k channel: give k << 1
 		if(HAL_I2C_Master_Transmit_IT(&hi2c1, TCA9548A_ADDRESS, tx_data,1) == HAL_OK){ //non_blocking reading of angle. send pointer of data buffer tx_data and send 1 byte. also check for HAL_OK return
 			current_state = STATE_WRITE_REG;
+		}
+		else{
+			i2C_busy = 0;
+			return;
 		}
 		break;
 	case STATE_WRITE_REG:
@@ -81,10 +86,18 @@ void Encoder_ReadValues(void){
 		if(HAL_I2C_Master_Transmit_IT(&hi2c1, AS5600_ADDRESS, tx_data, 1) == HAL_OK){
 			current_state = STATE_READ_DATA;
 		}
+		else{
+			i2C_busy = 0;
+			return;
+		}
 		break;
 	case STATE_READ_DATA:
 		if(HAL_I2C_Master_Receive_IT(&hi2c1, AS5600_ADDRESS, rx_data, 2) == HAL_OK){
 			current_state = STATE_NEXT_ENCODER;
+		}
+		else{
+			i2C_busy = 0;
+			return;
 		}
 		break;
 	case STATE_NEXT_ENCODER:
@@ -94,7 +107,7 @@ void Encoder_ReadValues(void){
 		current_channel++; //move to next encoder
 
 		if (current_channel >= NUM_ENCODERS) { //reset all flags
-
+			current_channel = 0;
 			for(int i = 0; i < NUM_ENCODERS; i++){
 				//current abc.de --> abcde (16 bit integer). then high_byte is the top 8 bits and low_byte is lower 8 bits. Both are sent to TxData_buf
 				high_byte = (uint16_t)(encoder_angles[i]*100) >> 8;
@@ -106,11 +119,12 @@ void Encoder_ReadValues(void){
 			current_state = STATE_IDLE;
 			i2C_busy = 0;
 			encoder_ready_flag = 1;  //flag that all encoders are ready
+			return;
 		}
 		else {
 			// Read next encoder
 			current_state = STATE_SELECT_CHANNEL;
-			Encoder_ReadValues();
+			//Encoder_ReadValues(); Let Tx Rx callbacks get to function again
 		}
 		break;
 	}

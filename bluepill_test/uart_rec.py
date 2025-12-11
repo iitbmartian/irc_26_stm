@@ -3,9 +3,9 @@ import time
 import numpy as np
 
 n_quad = 5
-n_enc = 1
+n_enc = 4
 n_acs = 9
-n_motors = 2 #13
+n_motors = 8 #13
 #8*explicit + 2*drill + 1*Linear base + 2*BLDC 
 
 quad_data = []
@@ -122,7 +122,7 @@ while True:
     dir = int(pwmout < 0)
     pwmout = abs(pwmout)
     print(dir, pwmout)
-    send_uart_data([dir, 0], [pwmout, 0])
+    # send_uart_data([dir, 0], [pwmout, 0])
 
     time.sleep(1)
     

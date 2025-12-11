@@ -112,10 +112,10 @@ extern int32_t gpio_enc_prev;
 extern int32_t pos[NUM_QUAD]; //absolute position
 extern int32_t dat[3*NUM_QUAD];
 
-uint8_t uart_rx_buf[2];
-volatile uint8_t pwm_arr[1];
-uint16_t pwm_out[1];
-volatile _Bool dir_arr[1];
+uint8_t uart_rx_buf[2*NUM_MOTORS];
+volatile uint8_t pwm_arr[NUM_MOTORS];
+uint16_t pwm_out[NUM_MOTORS];
+volatile _Bool dir_arr[NUM_MOTORS];
 
 //_Bool down = 0;
 
@@ -128,8 +128,9 @@ extern volatile uint8_t gpio_quad_counting_down;
 
 extern volatile uint8_t motor_overcurrent_flags[]; //overcurrent flags
 
-GPIO_TypeDef * const dir_port_arr[NUM_MOTORS] = {DIR1_GPIO_Port, DIR2_GPIO_Port};
-uint16_t const dir_pin_arr[NUM_MOTORS] = {DIR1_Pin, DIR2_Pin};
+GPIO_TypeDef * const dir_port_arr[NUM_MOTORS] = {DIR1_GPIO_Port, DIR2_GPIO_Port, DIR3_GPIO_Port, DIR4_GPIO_Port,
+		DIR5_GPIO_Port, DIR6_GPIO_Port, DIR7_GPIO_Port, DIR8_GPIO_Port};
+uint16_t const dir_pin_arr[NUM_MOTORS] = {DIR1_Pin, DIR2_Pin, DIR3_Pin, DIR4_Pin, DIR5_Pin, DIR6_Pin, DIR7_Pin, DIR8_Pin};
 
 /* USER CODE END 0 */
 
@@ -179,7 +180,11 @@ int main(void)
   MX_TIM7_Init();
   MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
+  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
+  HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
+  HAL_TIM_Encoder_Start(&htim8, TIM_CHANNEL_ALL);
   //startup sequence
   HAL_TIM_Base_Start_IT(&htim6); //I2C mux read interupt timer
   Encoder_Init();

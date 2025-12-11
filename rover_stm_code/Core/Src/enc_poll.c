@@ -48,20 +48,31 @@ void timer_quad_poll(){
 		diff_prev[i] = diff[i];
 
 		enc_curr[i] = (__HAL_TIM_GET_COUNTER(tim_arr[i]));
-
-		diff[i] = enc_curr[i] - enc_prev[i];
-
-		MAX_THINGY[i] = __HAL_TIM_GET_AUTORELOAD(&htim2);
-
-		if (diff[i] > MAX_THINGY[i] / 2) {
-			diff[i] -= MAX_THINGY[i];
+		if (__HAL_TIM_IS_TIM_COUNTING_DOWN(tim_arr[i])){//should give negative diff
+			if (enc_curr[i] == enc_prev[i]){ //zero
+				diff[i] = 0;
+			} else if (enc_curr[i] < enc_prev[i]){ //normal
+				diff[i] = enc_curr[i] - enc_prev[i];
+			}
+			else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
+				diff[i] = -(__HAL_TIM_GET_AUTORELOAD(tim_arr[i]) - enc_curr[i] + enc_prev[i]);
+			}
+		}
+		else{//should positive diff
+			if (enc_curr[i] == enc_prev[i]){ //zero
+				diff[i] = 0;
+			} else if (enc_curr[i] > enc_prev[i]){ //normal
+				diff[i] = enc_curr[i] - enc_prev[i];
+			}
+			else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
+				diff[i] = __HAL_TIM_GET_AUTORELOAD(tim_arr[i]) + enc_curr[i] - enc_prev[i];
+			}
 		}
 
-		if (diff[i] < -MAX_THINGY[i] / 2) {
-			diff[i] += MAX_THINGY[i];
-		}
+		diff[i] = diff[i];
 
 		pos[i] += diff[i]; //absolute position
+//		pos[i] = enc_curr[i];
 		diff2[i] = diff[i] - diff_prev[i];
 	}
 }
