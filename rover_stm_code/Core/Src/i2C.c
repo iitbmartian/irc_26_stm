@@ -1,10 +1,13 @@
 #include "i2C.h"
 #include "main.h"
 #include "uart.h"
+#include <stdio.h>
+#include <string.h>
 
 extern TIM_HandleTypeDef htim6;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
+extern UART_HandleTypeDef huart4;
 extern uint8_t TxData_buf[]; //extern TxData_buf in uart code
 extern _Bool rotate;
 
@@ -14,26 +17,18 @@ extern volatile uint8_t motor_overcurrent_flags[]; //overflow value
 volatile float encoder_angles[NUM_ENCODERS];
 volatile uint8_t high_byte;
 volatile uint8_t low_byte;
-//state of encoder measurement
-typedef enum {
-    STATE_IDLE,
-    STATE_SELECT_CHANNEL,
-    STATE_WRITE_REG,
-    STATE_READ_DATA,
-    STATE_NEXT_ENCODER
-} EncoderState_t;
 
-volatile EncoderState_t current_state = STATE_IDLE;
-volatile uint8_t current_channel = 0;
+volatile uint8_t past_value_low = 0;
+volatile uint8_t past_value_high = 0;
 
 //Data from I2C
 volatile uint8_t tx_data[2];
 volatile uint8_t rx_data[2];
 
-//I2C busy check
-volatile uint8_t i2C_busy = 0;
-volatile uint8_t encoder_ready_flag = 0;
-volatile uint16_t raw_angle;
+//angle value
+volatile float raw_angle;
+
+//char err[50];
 
 //encoder angle calculation from raw value
 float RawToDegrees(uint16_t raw){
@@ -54,83 +49,51 @@ void PCA9685_CAM_Init(void) {
     HAL_Delay(3);
 }
 
-//Encoder reading
-void Encoder_StartReading(void){
-	if (i2C_busy){ //already reading values
-		return;
-	}
-	current_channel = 0;
-	current_state = STATE_SELECT_CHANNEL;
-	i2C_busy = 1; //reading reading flag
 
-	Encoder_ReadValues();
-}
+void select_mux_channel(uint8_t ch) {
+    uint8_t data = (1 << ch);
+    HAL_I2C_Master_Transmit(&hi2c1, TCA9548A_ADDRESS, &data, 1, HAL_MAX_DELAY);
+//    	sprintf(err, "Switched to channel %d\r\n", ch);
+    	//HAL_UART_Transmit(&huart4, (uint8_t *) err, strlen(err), 1000);
+    HAL_Delay(10);
 
-void Encoder_ReadValues(void){
-	switch(current_state){
-	case STATE_IDLE:
-		current_state = STATE_SELECT_CHANNEL;
-		break;
-	case STATE_SELECT_CHANNEL:
-		tx_data[0] = (1 << current_channel); //select k channel: give k << 1
-		if(HAL_I2C_Master_Transmit_IT(&hi2c1, TCA9548A_ADDRESS, tx_data,1) == HAL_OK){ //non_blocking reading of angle. send pointer of data buffer tx_data and send 1 byte. also check for HAL_OK return
-			current_state = STATE_WRITE_REG;
-		}
-		else{
-			i2C_busy = 0;
-			return;
-		}
-		break;
-	case STATE_WRITE_REG:
-		tx_data[0] = AS5600_ANGLE_H;
-		if(HAL_I2C_Master_Transmit_IT(&hi2c1, AS5600_ADDRESS, tx_data, 1) == HAL_OK){
-			current_state = STATE_READ_DATA;
-		}
-		else{
-			i2C_busy = 0;
-			return;
-		}
-		break;
-	case STATE_READ_DATA:
-		if(HAL_I2C_Master_Receive_IT(&hi2c1, AS5600_ADDRESS, rx_data, 2) == HAL_OK){
-			current_state = STATE_NEXT_ENCODER;
-		}
-		else{
-			i2C_busy = 0;
-			return;
-		}
-		break;
-	case STATE_NEXT_ENCODER:
-		raw_angle = (((uint16_t)rx_data[0] << 8) | ((uint16_t)rx_data[1])) & 0x0FFF; //rx_data[0] has higher 8 bits of which last 4 are useful. rx_data[1] has lower 8 bits. This just combines both into a single uint16_t
-		encoder_angles[current_channel] = RawToDegrees(raw_angle);
-
-		current_channel++; //move to next encoder
-
-		if (current_channel >= NUM_ENCODERS) { //reset all flags
-			current_channel = 0;
-			for(int i = 0; i < NUM_ENCODERS; i++){
-				//current abc.de --> abcde (16 bit integer). then high_byte is the top 8 bits and low_byte is lower 8 bits. Both are sent to TxData_buf
-				high_byte = (uint16_t)(encoder_angles[i]*100) >> 8;
-				low_byte = ((uint16_t)(encoder_angles[i]*100)) & 0xFF;
-				TxData_buf[12*(NUM_QUAD + 1) + 2*i] = high_byte;
-				TxData_buf[12*(NUM_QUAD + 1) + 2*i + 1] = low_byte;
-				//Final TxData_buf is [enc1_high,enc1_low,enc2_high,enc2_low,enc3_high,enc3_low ... ]
-			}
-			current_state = STATE_IDLE;
-			i2C_busy = 0;
-			encoder_ready_flag = 1;  //flag that all encoders are ready
-			return;
-		}
-		else {
-			// Read next encoder
-			current_state = STATE_SELECT_CHANNEL;
-			//Encoder_ReadValues(); Let Tx Rx callbacks get to function again
-		}
-		break;
-	}
 }
 
 
+void read_magnetic_encoder(void)
+{
+    uint8_t buf[2];
+
+    for (uint8_t i = 0; i < NUM_ENCODERS; i++)
+    {
+        select_mux_channel(i);
+
+        HAL_StatusTypeDef st =
+            HAL_I2C_Mem_Read(&hi2c1,  AS5600_ADDRESS, 0x0E, I2C_MEMADD_SIZE_8BIT, buf, 2, HAL_MAX_DELAY);
+
+        HAL_Delay(1);
+
+        if (st != HAL_OK) {
+            TxData_buf[2*i] = past_value_high;
+            TxData_buf[2*i + 1] = past_value_low;
+            continue;
+        }
+
+        uint16_t raw = ((uint16_t)buf[0] << 8) | buf[1];
+
+        raw &= 0x0FFF;
+
+        raw_angle = RawToDegrees(raw);
+
+        uint16_t scaled = (uint16_t)(raw_angle * 100);
+
+        TxData_buf[12*(NUM_QUAD + 1) + 2*i] = (scaled >> 8) & 0xFF;
+        TxData_buf[12*(NUM_QUAD + 1) + 2*i + 1] = scaled & 0xFF;
+
+        past_value_high = (scaled >> 8) & 0xFF;
+        past_value_low = scaled & 0xFF;
+    }
+}
 
 // Set PWM frequency for Motors
 void PCA9685_MOTOR_SetFrequency(uint16_t freq) {
@@ -188,26 +151,5 @@ void PCA9685_CAM_SetPWM(uint8_t channel, uint16_t on, uint16_t off) {
 
     HAL_I2C_Mem_Write(&hi2c2, PCA9685_ADDRESS_CAM, PCA9685_LED0_ON_L + 4*channel, 1, data, 4, HAL_MAX_DELAY);
 }
-
-//I2C2 for encoder callback functions
-//automatic callback Tx
-void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
-{
-    if (hi2c->Instance == I2C1) {
-        Encoder_ReadValues();  // re-run case statement function
-    }
-}
-
-//automatic callback Rx
-void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
-{
-    if (hi2c->Instance == I2C1) {
-        Encoder_ReadValues();  // re-run case statement function
-    }
-}
-
-//THE TIMER CALLBACK IS IN STEPPER.C FILE (multiple definitions not supported of timer callback function)
-
-//end callback functions
 
 

@@ -21,6 +21,16 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "uart.h"
+#include "i2C.h"
+#include "enc_poll.h"
+#include "acs.h"
+#include "quad_gpio.h"
+#include "stepper.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -79,12 +89,12 @@ static void MX_I2C2_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
-static void MX_TIM4_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_UART4_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_TIM16_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -118,8 +128,8 @@ uint16_t pwm_out[NUM_MOTORS];
 volatile _Bool dir_arr[NUM_MOTORS];
 
 //_Bool down = 0;
-
-int i;
+//
+//int i;
 
 int16_t diffdat[NUM_QUAD] = {0};
 
@@ -131,6 +141,36 @@ extern volatile uint8_t motor_overcurrent_flags[]; //overcurrent flags
 GPIO_TypeDef * const dir_port_arr[NUM_MOTORS] = {DIR1_GPIO_Port, DIR2_GPIO_Port, DIR3_GPIO_Port, DIR4_GPIO_Port,
 		DIR5_GPIO_Port, DIR6_GPIO_Port, DIR7_GPIO_Port, DIR8_GPIO_Port};
 uint16_t const dir_pin_arr[NUM_MOTORS] = {DIR1_Pin, DIR2_Pin, DIR3_Pin, DIR4_Pin, DIR5_Pin, DIR6_Pin, DIR7_Pin, DIR8_Pin};
+//
+//
+//char err[50];
+//
+//bool I2C_Encoder_Setup(void) {
+//	for(int i=0; i<NUM_ENCODERS; i++) {
+//		uint8_t channelByte = (1<<i);
+//		if (HAL_I2C_Master_Transmit(&hi2c1, TCA9548A_ADDRESS, &channelByte, 1, HAL_MAX_DELAY) != HAL_OK) {
+//			sprintf(err, "Could not connect to mux\r\n");
+//			HAL_UART_Transmit(&huart4, (uint8_t *) err, strlen(err), 1000);
+//		}
+//		uint8_t regAddr = 0x0B;
+//		uint8_t status;
+//		if (HAL_I2C_Master_Transmit(&hi2c1, AS5600_ADDRESS, &regAddr, 1, 100) != HAL_OK) {
+//			sprintf(err, "Transmit Check Failed at Encoder %d!\r\n", i);
+//			HAL_UART_Transmit(&huart4, (uint8_t *) err, strlen(err), 1000);
+//			return false;
+//		}
+//
+//		if (HAL_I2C_Master_Receive(&hi2c1, AS5600_ADDRESS, &status, 1, 100) != HAL_OK) {
+//			sprintf(err, "Receive Check Failed at Encoder %d!\r\n", i);
+//			HAL_UART_Transmit(&huart4, (uint8_t *) err, strlen(err), 1000);
+//			return false;
+//		}
+//	}
+//	sprintf(err, "Encoder Check Passed!\r\n");
+//	HAL_UART_Transmit(&huart4, (uint8_t *) err, strlen(err), 1000);
+//	return true;
+//}
+
 
 /* USER CODE END 0 */
 
@@ -173,12 +213,12 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_TIM4_Init();
   MX_TIM8_Init();
   MX_UART4_Init();
   MX_TIM6_Init();
   MX_TIM7_Init();
   MX_TIM16_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
@@ -186,7 +226,11 @@ int main(void)
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
   HAL_TIM_Encoder_Start(&htim8, TIM_CHANNEL_ALL);
   //startup sequence
-  HAL_TIM_Base_Start_IT(&htim6); //I2C mux read interupt timer
+//  HAL_TIM_Base_Start_IT(&htim6); //I2C mux read interupt timer
+//  if (!I2C_Encoder_Setup()) {
+//		  sprintf(err, "Setup Failed\r\n");
+//		  HAL_UART_Transmit(&huart4, (uint8_t *) err, strlen(err), 1000);
+//  }
   Encoder_Init();
   Start_ADC_DMA_All();
   PCA9685_MOTOR_Init();
@@ -208,6 +252,8 @@ int main(void)
 			HAL_GPIO_WritePin(dir_port_arr[i], dir_pin_arr[i], dir_arr[i]);
 		}
 
+		read_magnetic_encoder();
+
 		timer_quad_poll();
 		timer_update_TX();
 		drill_quad_poll();
@@ -216,7 +262,7 @@ int main(void)
 		TxData_buf[data_out_length-1] = '\n';
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
 
-		HAL_Delay(10); // delay between magnetic encoder data
+		HAL_Delay(5); // delay between magnetic encoder data
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -772,18 +818,18 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 5281;
+  htim4.Init.Period = 65535;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 10;
+  sConfig.IC1Filter = 0;
   sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 10;
+  sConfig.IC2Filter = 0;
   if (HAL_TIM_Encoder_Init(&htim4, &sConfig) != HAL_OK)
   {
     Error_Handler();

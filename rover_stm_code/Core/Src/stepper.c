@@ -69,9 +69,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 
     // If using TIM6 for encoder updates
-    if (htim->Instance == TIM6) {
-        Encoder_StartReading();  // trigger new reading cycle (I2C mux)
-    }
+//    if (htim->Instance == TIM6) {
+//        Encoder_StartReading();  // trigger new reading cycle (I2C mux)
+//    }
 
     if(htim -> Instance == TIM16){
     	ADC_Reading();

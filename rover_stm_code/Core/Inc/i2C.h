@@ -31,7 +31,9 @@ void PCA9685_MOTOR_SetPWM(uint8_t channel, uint16_t on, uint16_t off);
 void PCA9685_CAM_SetPWM(uint8_t channel, uint16_t on, uint16_t off);
 
 float RawToDegrees(uint16_t raw);
-void Encoder_StartReading(void);
-void Encoder_ReadValues(void);
+//void Encoder_StartReading(void);
+//void Encoder_ReadValues(void);
+void select_mux_channel(uint8_t ch);
+void read_magnetic_encoder(void);
 
 #endif /* INC_I2C_H_ */
