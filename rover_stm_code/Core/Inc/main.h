@@ -69,8 +69,6 @@ void Error_Handler(void);
 #define DIR4_GPIO_Port GPIOC
 #define DIR9_Pin GPIO_PIN_3
 #define DIR9_GPIO_Port GPIOC
-#define DIR5_Pin GPIO_PIN_3
-#define DIR5_GPIO_Port GPIOA
 #define PULSE2_Pin GPIO_PIN_4
 #define PULSE2_GPIO_Port GPIOC
 #define DIR2_Pin GPIO_PIN_0
@@ -101,6 +99,8 @@ void Error_Handler(void);
 #define DIR3_GPIO_Port GPIOA
 #define DIR_STEP_1_Pin GPIO_PIN_12
 #define DIR_STEP_1_GPIO_Port GPIOC
+#define DIR5_Pin GPIO_PIN_2
+#define DIR5_GPIO_Port GPIOD
 #define DIR6_Pin GPIO_PIN_9
 #define DIR6_GPIO_Port GPIOB
 

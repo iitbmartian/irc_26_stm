@@ -11,9 +11,9 @@
 
 #define NUM_QUAD 5 //number of quadrature on timers
 #define NUM_ENCODERS 4 //number of AS5600 encoders (1 for testing, 6 in reality)
-#define NUM_MOTORS 8
+#define NUM_MOTORS 9
 #define NUM_ACS 9 //4 in adc1 and 5 in adc2
-#define data_in_length 12 //input byte array
+#define data_in_length (2*NUM_MOTORS) //input byte array
 #define data_out_length 12*(NUM_QUAD + 1) + 2*NUM_ENCODERS + 2*NUM_ACS + 1
 //FRAME FORMAT
 //  12 * num. of quadratures through timers (there are 5 timers)
