@@ -128,8 +128,7 @@ extern volatile uint8_t gpio_quad_counting_down;
 
 extern volatile uint8_t motor_overcurrent_flags[]; //overcurrent flags
 
-GPIO_TypeDef * const dir_port_arr[NUM_MOTORS] = {DIR1_GPIO_Port, DIR2_GPIO_Port, DIR3_GPIO_Port, DIR4_GPIO_Port,
-		DIR5_GPIO_Port, DIR6_GPIO_Port, DIR7_GPIO_Port, DIR8_GPIO_Port, DIR9_GPIO_Port};
+GPIO_TypeDef * const dir_port_arr[NUM_MOTORS] = {DIR1_GPIO_Port, DIR2_GPIO_Port, DIR3_GPIO_Port, DIR4_GPIO_Port, DIR5_GPIO_Port, DIR6_GPIO_Port, DIR7_GPIO_Port, DIR8_GPIO_Port, DIR9_GPIO_Port};
 uint16_t const dir_pin_arr[NUM_MOTORS] = {DIR1_Pin, DIR2_Pin, DIR3_Pin, DIR4_Pin, DIR5_Pin, DIR6_Pin, DIR7_Pin, DIR8_Pin, DIR9_Pin};
 
 /* USER CODE END 0 */
@@ -212,6 +211,8 @@ int main(void)
 			HAL_GPIO_WritePin(dir_port_arr[i], dir_pin_arr[i], dir_arr[i]);
 		}
 
+		read_magnetic_encoder();
+
 		timer_quad_poll();
 		timer_update_TX();
 		drill_quad_poll();
@@ -220,7 +221,7 @@ int main(void)
 		TxData_buf[data_out_length-1] = '\n';
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
 
-		HAL_Delay(10); // delay between magnetic encoder data
+		HAL_Delay(5); // delay between magnetic encoder data
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
