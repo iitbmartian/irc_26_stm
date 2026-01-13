@@ -35,7 +35,7 @@ void PCA9685_CAM_Init(void) {
 void select_mux_channel(uint8_t ch) {
     uint8_t data = (1 << ch);
     HAL_I2C_Master_Transmit(&hi2c1, TCA9548A_ADDRESS, &data, 1, HAL_MAX_DELAY);
-    HAL_Delay(1);
+    HAL_Delay(3);
 }
 
 void read_magnetic_encoder(void)
@@ -48,7 +48,7 @@ void read_magnetic_encoder(void)
 
         HAL_StatusTypeDef st = HAL_I2C_Mem_Read(&hi2c1, AS5600_ADDRESS, 0x0E, I2C_MEMADD_SIZE_8BIT, buf, 2, HAL_MAX_DELAY);
 
-        HAL_Delay(1);
+        HAL_Delay(2);
 
         if (st == HAL_OK) {
 			uint16_t raw = ((uint16_t)buf[0] << 8) | buf[1];
