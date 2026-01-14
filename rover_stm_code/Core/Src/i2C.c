@@ -32,8 +32,10 @@ void PCA9685_CAM_Init(void) {
     HAL_Delay(3);
 }
 
+uint8_t mag_enc_array[] = {0,2,4,6};
+
 void select_mux_channel(uint8_t ch) {
-    uint8_t data = (1 << ch);
+    uint8_t data = (1 << mag_enc_array[ch]);
     HAL_I2C_Master_Transmit(&hi2c1, TCA9548A_ADDRESS, &data, 1, HAL_MAX_DELAY);
     HAL_Delay(3);
 }
