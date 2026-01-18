@@ -112,10 +112,12 @@ extern int32_t gpio_enc_prev;
 extern int32_t pos[NUM_QUAD]; //absolute position
 extern int32_t dat[3*NUM_QUAD];
 
-uint8_t uart_rx_buf[2*NUM_MOTORS];
-volatile uint8_t pwm_arr[NUM_MOTORS];
-uint16_t pwm_out[NUM_MOTORS];
-volatile _Bool dir_arr[NUM_MOTORS];
+uint8_t uart_rx_buf[UART_Rx_size];
+uint8_t pwm_arr[NUM_MOTORS] = {0};
+uint8_t servo_arr[NUM_SERVOS] = {0}; //no direction for servos
+uint16_t servo_out[NUM_SERVOS] = {0};
+uint16_t pwm_out[NUM_MOTORS] = {0};
+_Bool dir_arr[NUM_MOTORS] = {0};
 
 //_Bool down = 0;
 
@@ -194,7 +196,10 @@ int main(void)
   PCA9685_MOTOR_SetFrequency(1000);
   PCA9685_MOTOR_SetPWM(0, 0, 0);
 
-  HAL_UART_Receive_DMA (&huart4, uart_rx_buf, 2 * NUM_MOTORS);
+  PCA9685_CAM_Init();
+  PCA9685_CAM_SetFrequency(50);
+
+  HAL_UART_Receive_DMA (&huart4, uart_rx_buf, UART_Rx_size);
 
   int get_pca_index_val[] = {14,13,11,12,10,9,7,6,8,5,4,3};
   /* USER CODE END 2 */
@@ -203,12 +208,17 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		for (int i= 0; i < NUM_MOTORS; i++){
-			pwm_out[i] = pwm_arr[i];
-			pwm_out[i] = pwm_out[i] << 4;
+		for (int i = 0; i < NUM_MOTORS; i++){
+//			pwm_out[i] = pwm_arr[i];
+//			pwm_out[i] = pwm_out[i] << 4;
 //			pwm_out[i] = 2000;
-			PCA9685_MOTOR_SetPWM(get_pca_index_val[i], 0, pwm_out[i]);
+			PCA9685_MOTOR_SetPWM(get_pca_index_val[i], 0, ((uint16_t)pwm_arr[i]) << 4);
 			HAL_GPIO_WritePin(dir_port_arr[i], dir_pin_arr[i], dir_arr[i]);
+		}
+
+		for (int i = 0; i < NUM_SERVOS; i++){
+			PCA9685_CAM_SetPWM(i, 0, ((uint16_t)servo_arr[i]) << 4);
+			//no direction pin
 		}
 
 		read_magnetic_encoder();
@@ -1116,7 +1126,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		dir_arr[i] = uart_rx_buf[2*i];
 		pwm_arr[i] = uart_rx_buf[2*i + 1];
 	}
-	HAL_UART_Receive_DMA(&huart4, uart_rx_buf, 2 * NUM_MOTORS);
+	for (int i = NUM_MOTORS; i < NUM_MOTORS+NUM_SERVOS; i++){
+		servo_arr[i] = uart_rx_buf[2*(NUM_MOTORS + i)];
+	}
+	HAL_UART_Receive_DMA(&huart4, uart_rx_buf, UART_Rx_size);
 }
 /* USER CODE END 4 */
 
