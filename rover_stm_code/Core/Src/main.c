@@ -205,11 +205,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		for (int i= 0; i < NUM_MOTORS; i++){
-			pwm_out[i] = pwm_arr[i];
-			pwm_out[i] = pwm_out[i] << 4;
+		for (int i = 0; i < NUM_MOTORS; i++){
+//			pwm_out[i] = pwm_arr[i];
+//			pwm_out[i] = pwm_out[i] << 4;
 //			pwm_out[i] = 2000;
-			PCA9685_MOTOR_SetPWM(get_pca_index_val[i], 0, pwm_out[i]);
+			PCA9685_MOTOR_SetPWM(get_pca_index_val[i], 0, ((uint16_t)pwm_arr[i]) << 4);
 			HAL_GPIO_WritePin(dir_port_arr[i], dir_pin_arr[i], dir_arr[i]);
 		}
 
