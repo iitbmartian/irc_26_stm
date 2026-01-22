@@ -112,10 +112,11 @@ extern int32_t gpio_enc_prev;
 extern int32_t pos[NUM_QUAD]; //absolute position
 extern int32_t dat[3*NUM_QUAD];
 
-uint8_t uart_rx_buf[2*NUM_MOTORS];
+uint8_t uart_rx_buf[UART_RX_SIZE];
 volatile uint8_t pwm_arr[NUM_MOTORS];
 uint16_t pwm_out[NUM_MOTORS];
 volatile _Bool dir_arr[NUM_MOTORS];
+volatile uint8_t servo_arr[NUM_SERVOS];
 
 //_Bool down = 0;
 
@@ -137,8 +138,6 @@ uint16_t const dir_pin_arr[NUM_MOTORS] = {DIR1_Pin, DIR2_Pin, DIR3_Pin, DIR4_Pin
   * @brief  The application entry point.
   * @retval int
   */
-
-
 int main(void)
 {
 
@@ -194,7 +193,10 @@ int main(void)
   PCA9685_MOTOR_SetFrequency(1000);
   PCA9685_MOTOR_SetPWM(0, 0, 0);
 
-  HAL_UART_Receive_DMA (&huart4, uart_rx_buf, 2 * NUM_MOTORS);
+  PCA9685_CAM_Init();
+  PCA9685_CAM_SetFrequency(50);
+
+  HAL_UART_Receive_DMA (&huart4, uart_rx_buf, UART_RX_SIZE);
 
   int get_pca_index_val[] = {14,13,11,12,10,9,7,6,8,5,4,3};
   /* USER CODE END 2 */
@@ -209,6 +211,10 @@ int main(void)
 //			pwm_out[i] = 2000;
 			PCA9685_MOTOR_SetPWM(get_pca_index_val[i], 0, pwm_out[i]);
 			HAL_GPIO_WritePin(dir_port_arr[i], dir_pin_arr[i], dir_arr[i]);
+		}
+
+		for (int i = 0; i < NUM_SERVOS; i++){
+			PCA9685_CAM_SetPWM(i, 0, ((uint16_t)servo_arr[i]) << 4);
 		}
 
 		read_magnetic_encoder();
@@ -1039,18 +1045,22 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, DIR1_Pin|DIR4_Pin|DIR9_Pin|PULSE2_Pin
                           |DIR_STEP_1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, DIR5_Pin|DIR3_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, DIR2_Pin|DIR8_Pin|EM_BRAKE_S_Pin|DIR7_Pin
                           |DIR10_Pin|DIR11_Pin|DIR_STEP_2_Pin|EM_BRAKE_E_Pin
                           |PULSE1_Pin|DIR6_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(DIR3_GPIO_Port, DIR3_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(DIR5_GPIO_Port, DIR5_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : DIR1_Pin DIR4_Pin DIR9_Pin PULSE2_Pin
                            DIR_STEP_1_Pin */
@@ -1060,13 +1070,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : DIR5_Pin DIR3_Pin */
-  GPIO_InitStruct.Pin = DIR5_Pin|DIR3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : DIR2_Pin DIR8_Pin EM_BRAKE_S_Pin DIR7_Pin
                            DIR10_Pin DIR11_Pin DIR_STEP_2_Pin EM_BRAKE_E_Pin
@@ -1090,6 +1093,20 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(DRILL_QUAD_B_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : DIR3_Pin */
+  GPIO_InitStruct.Pin = DIR3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(DIR3_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : DIR5_Pin */
+  GPIO_InitStruct.Pin = DIR5_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(DIR5_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
@@ -1116,7 +1133,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		dir_arr[i] = uart_rx_buf[2*i];
 		pwm_arr[i] = uart_rx_buf[2*i + 1];
 	}
-	HAL_UART_Receive_DMA(&huart4, uart_rx_buf, 2 * NUM_MOTORS);
+	for (int i = 0; i < NUM_SERVOS; i++){
+		servo_arr[i] = uart_rx_buf[(2*NUM_MOTORS) + i];
+	}
+	HAL_UART_Receive_DMA(&huart4, uart_rx_buf, UART_RX_SIZE);
 }
 /* USER CODE END 4 */
 
