@@ -25,7 +25,7 @@ uint32_t enc_prev[NUM_QUAD] = {0};
 int16_t diff[NUM_QUAD] = {0};
 int16_t diff2[NUM_QUAD] = {0};
 int16_t diff_prev[NUM_QUAD] = {0};
-int16_t MAX_THINGY[NUM_QUAD];
+int16_t MAX_VALUE[NUM_QUAD];
 
 //drill encoder
 extern volatile int32_t quad_count;
@@ -44,35 +44,26 @@ int32_t pos[NUM_QUAD] = {0}; //absolute position
 
 void timer_quad_poll(){
 	for (int i = 0; i < NUM_QUAD; i++){
+//		taking shit from da prev loop babyyyyyy
 		enc_prev[i] = enc_curr[i];
 		diff_prev[i] = diff[i];
 
+//		new loop babbyyyyyyy
 		enc_curr[i] = (__HAL_TIM_GET_COUNTER(tim_arr[i]));
-		if (__HAL_TIM_IS_TIM_COUNTING_DOWN(tim_arr[i])){//should give negative diff
-			if (enc_curr[i] == enc_prev[i]){ //zero
-				diff[i] = 0;
-			} else if (enc_curr[i] < enc_prev[i]){ //normal
-				diff[i] = enc_curr[i] - enc_prev[i];
-			}
-			else { //(enc_curr[i] > enc_prev[i]){//appears to increase, so underflow
-				diff[i] = -(__HAL_TIM_GET_AUTORELOAD(tim_arr[i]) - enc_curr[i] + enc_prev[i]);
-			}
-		}
-		else{//should positive diff
-			if (enc_curr[i] == enc_prev[i]){ //zero
-				diff[i] = 0;
-			} else if (enc_curr[i] > enc_prev[i]){ //normal
-				diff[i] = enc_curr[i] - enc_prev[i];
-			}
-			else {//(enc_curr[i] < enc_prev[i]){//appears to increase, so underflow
-				diff[i] = __HAL_TIM_GET_AUTORELOAD(tim_arr[i]) + enc_curr[i] - enc_prev[i];
-			}
+
+		diff[i] = enc_curr[i] - enc_prev[i];
+
+		MAX_VALUE[i] = __HAL_TIM_GET_AUTORELOAD(&htim2);
+
+		if (diff[i] > MAX_VALUE[i] / 2) {
+			diff[i] -= MAX_VALUE[i];
 		}
 
-		diff[i] = diff[i];
+		if (diff[i] < -MAX_VALUE[i] / 2) {
+			diff[i] += MAX_VALUE[i];
+		}
 
 		pos[i] += diff[i]; //absolute position
-//		pos[i] = enc_curr[i];
 		diff2[i] = diff[i] - diff_prev[i];
 	}
 }
