@@ -59,8 +59,13 @@ void read_magnetic_encoder(void)
 
 			uint16_t scaled = (raw * 36000U) >> 12; //don touch its correct, avoids float calculation, just calcualtes current * 100 as required
 
-			TxData_buf[12*(NUM_QUAD + 1) + 2*i] = (scaled >> 8) & 0xFF;
-			TxData_buf[12*(NUM_QUAD + 1) + 2*i + 1] = scaled & 0xFF;
+//			OLD_FRAME
+//			TxData_buf[12*(NUM_QUAD + 1) + 2*i] = (scaled >> 8) & 0xFF;
+//			TxData_buf[12*(NUM_QUAD + 1) + 2*i + 1] = scaled & 0xFF;
+
+//			NEW_FRAME
+			TxData_buf[8*(NUM_QUAD + 1) + 2*i] = (scaled >> 8) & 0xFF;
+			TxData_buf[8*(NUM_QUAD + 1) + 2*i + 1] = scaled & 0xFF;
         }
     }
 }

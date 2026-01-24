@@ -44,8 +44,9 @@ void ADC_Reading(void)
 	for(int i = 0 ; i < 4; i++)
 	{
 		uint16_t val = adc1_buf[i];
-		TxData_buf[12*(NUM_QUAD + 1) + 2*NUM_ENCODERS + 2*i] = ((val >> 8) & 0xFF); //high byte
-		TxData_buf[12*(NUM_QUAD + 1) + 2*NUM_ENCODERS + 2*i + 1] = (val & 0xFF); //low byte
+//		OLD_FRAME
+//		TxData_buf[12*(NUM_QUAD + 1) + 2*NUM_ENCODERS + 2*i] = ((val >> 8) & 0xFF); //high byte
+//		TxData_buf[12*(NUM_QUAD + 1) + 2*NUM_ENCODERS + 2*i + 1] = (val & 0xFF); //low byte
 		if((val > adc_cut_value) && (motor_overcurrent_flags[i] == 0)){
 			motor_overcurrent_flags[i] = 1;
 			motor_overcurrent_timestamp[i] = HAL_GetTick(); //milliseconds from startup
@@ -53,33 +54,12 @@ void ADC_Reading(void)
 	}
 	for(int i = 0 ; i < 5 ; i ++){
 		uint16_t val = adc2_buf[i];
-		TxData_buf[12*(NUM_QUAD + 1) + 2*NUM_ENCODERS + 8 + 2*i] = ((val >> 8) & 0xFF); //high byte
-		TxData_buf[12*(NUM_QUAD + 1) + 2*NUM_ENCODERS + 8 + 2*i + 1] = (val & 0xFF); //low byte
+//		OLD_FRAME
+//		TxData_buf[12*(NUM_QUAD + 1) + 2*NUM_ENCODERS + 8 + 2*i] = ((val >> 8) & 0xFF); //high byte
+//		TxData_buf[12*(NUM_QUAD + 1) + 2*NUM_ENCODERS + 8 + 2*i + 1] = (val & 0xFF); //low byte
 		if((val > adc_cut_value) && (motor_overcurrent_flags[i+4] == 0)){
 			motor_overcurrent_flags[i + 4] = 1;
 			motor_overcurrent_timestamp[i + 4] = HAL_GetTick(); //milliseconds from startup
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

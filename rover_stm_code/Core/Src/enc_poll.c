@@ -70,20 +70,32 @@ void timer_quad_poll(){
 
 void timer_update_TX(){
 	for (int i = 0; i < NUM_QUAD; i++){
-		TxData_buf[12*i] = (pos[i]&0xFF000000)>>24;
-		TxData_buf[12*i+1] = (pos[i]&0x00FF0000)>>16;
-		TxData_buf[12*i+2] = (pos[i]&0x0000FF00)>>8;
-		TxData_buf[12*i+3] = (pos[i]&0x000000FF);
+//			OLD_FRAME
+//			TxData_buf[12*i] = (pos[i]&0xFF000000)>>24;
+//			TxData_buf[12*i+1] = (pos[i]&0x00FF0000)>>16;
+//			TxData_buf[12*i+2] = (pos[i]&0x0000FF00)>>8;
+//			TxData_buf[12*i+3] = (pos[i]&0x000000FF);
+//
+//			TxData_buf[12*i+4] = (diff[i]&0xFF000000)>>24;
+//			TxData_buf[12*i+5] = (diff[i]&0x00FF0000)>>16;
+//			TxData_buf[12*i+6] = (diff[i]&0x0000FF00)>>8;
+//			TxData_buf[12*i+7] = (diff[i]&0x000000FF);
+//
+//			TxData_buf[12*i+8] = (diff2[i]&0xFF000000)>>24;
+//			TxData_buf[12*i+9] = (diff2[i]&0x00FF0000)>>16;
+//			TxData_buf[12*i+10] = (diff2[i]&0x0000FF00)>>8;
+//			TxData_buf[12*i+11] = (diff2[i]&0x000000FF);
 
-		TxData_buf[12*i+4] = (diff[i]&0xFF000000)>>24;
-		TxData_buf[12*i+5] = (diff[i]&0x00FF0000)>>16;
-		TxData_buf[12*i+6] = (diff[i]&0x0000FF00)>>8;
-		TxData_buf[12*i+7] = (diff[i]&0x000000FF);
+//			NEW_FRME
+			TxData_buf[8*i] = (pos[i]&0xFF000000)>>24;
+			TxData_buf[8*i+1] = (pos[i]&0x00FF0000)>>16;
+			TxData_buf[8*i+2] = (pos[i]&0x0000FF00)>>8;
+			TxData_buf[8*i+3] = (pos[i]&0x000000FF);
 
-		TxData_buf[12*i+8] = (diff2[i]&0xFF000000)>>24;
-		TxData_buf[12*i+9] = (diff2[i]&0x00FF0000)>>16;
-		TxData_buf[12*i+10] = (diff2[i]&0x0000FF00)>>8;
-		TxData_buf[12*i+11] = (diff2[i]&0x000000FF);
+			TxData_buf[8*i+4] = (diff[i]&0xFF000000)>>24;
+			TxData_buf[8*i+5] = (diff[i]&0x00FF0000)>>16;
+			TxData_buf[8*i+6] = (diff[i]&0x0000FF00)>>8;
+			TxData_buf[8*i+7] = (diff[i]&0x000000FF);
 	}
 }
 
@@ -119,18 +131,30 @@ void drill_quad_poll(){
 }
 
 void drill_update_TX(){
-	TxData_buf[12*NUM_QUAD] = (gpio_pos&0xFF000000)>>24;
-	TxData_buf[12*NUM_QUAD+1] = (gpio_pos&0x00FF0000)>>16;
-	TxData_buf[12*NUM_QUAD+2] = (gpio_pos&0x0000FF00)>>8;
-	TxData_buf[12*NUM_QUAD+3] = (gpio_pos&0x000000FF);
+//	OLD_FRAME
+//	TxData_buf[12*NUM_QUAD] = (gpio_pos&0xFF000000)>>24;
+//	TxData_buf[12*NUM_QUAD+1] = (gpio_pos&0x00FF0000)>>16;
+//	TxData_buf[12*NUM_QUAD+2] = (gpio_pos&0x0000FF00)>>8;
+//	TxData_buf[12*NUM_QUAD+3] = (gpio_pos&0x000000FF);
+//
+//	TxData_buf[12*NUM_QUAD+4] = (gpio_diff&0xFF000000)>>24;
+//	TxData_buf[12*NUM_QUAD+5] = (gpio_diff&0x00FF0000)>>16;
+//	TxData_buf[12*NUM_QUAD+6] = (gpio_diff&0x0000FF00)>>8;
+//	TxData_buf[12*NUM_QUAD+7] = (gpio_diff&0x000000FF);
+//
+//	TxData_buf[12*NUM_QUAD+8] = (gpio_diff2&0xFF000000)>>24;
+//	TxData_buf[12*NUM_QUAD+9] = (gpio_diff2&0x00FF0000)>>16;
+//	TxData_buf[12*NUM_QUAD+10] = (gpio_diff2&0x0000FF00)>>8;
+//	TxData_buf[12*NUM_QUAD+11] = (gpio_diff2&0x000000FF);
 
-	TxData_buf[12*NUM_QUAD+4] = (gpio_diff&0xFF000000)>>24;
-	TxData_buf[12*NUM_QUAD+5] = (gpio_diff&0x00FF0000)>>16;
-	TxData_buf[12*NUM_QUAD+6] = (gpio_diff&0x0000FF00)>>8;
-	TxData_buf[12*NUM_QUAD+7] = (gpio_diff&0x000000FF);
+//	NEW_FRMAE
+	TxData_buf[8*NUM_QUAD] = (gpio_pos&0xFF000000)>>24;
+	TxData_buf[8*NUM_QUAD+1] = (gpio_pos&0x00FF0000)>>16;
+	TxData_buf[8*NUM_QUAD+2] = (gpio_pos&0x0000FF00)>>8;
+	TxData_buf[8*NUM_QUAD+3] = (gpio_pos&0x000000FF);
 
-	TxData_buf[12*NUM_QUAD+8] = (gpio_diff2&0xFF000000)>>24;
-	TxData_buf[12*NUM_QUAD+9] = (gpio_diff2&0x00FF0000)>>16;
-	TxData_buf[12*NUM_QUAD+10] = (gpio_diff2&0x0000FF00)>>8;
-	TxData_buf[12*NUM_QUAD+11] = (gpio_diff2&0x000000FF);
+	TxData_buf[8*NUM_QUAD+4] = (gpio_diff&0xFF000000)>>24;
+	TxData_buf[8*NUM_QUAD+5] = (gpio_diff&0x00FF0000)>>16;
+	TxData_buf[8*NUM_QUAD+6] = (gpio_diff&0x0000FF00)>>8;
+	TxData_buf[8*NUM_QUAD+7] = (gpio_diff&0x000000FF);
 }
