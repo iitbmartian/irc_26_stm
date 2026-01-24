@@ -117,7 +117,7 @@ volatile uint8_t pwm_arr[NUM_MOTORS];
 uint16_t pwm_out[NUM_MOTORS];
 volatile _Bool dir_arr[NUM_MOTORS];
 volatile uint8_t servo_arr[NUM_SERVOS];
-
+uint8_t wrist_command = 0;
 //_Bool down = 0;
 
 int i;
@@ -129,8 +129,11 @@ extern volatile uint8_t gpio_quad_counting_down;
 
 extern volatile uint8_t motor_overcurrent_flags[]; //overcurrent flags
 
-GPIO_TypeDef * const dir_port_arr[NUM_MOTORS] = {DIR1_GPIO_Port, DIR2_GPIO_Port, DIR3_GPIO_Port, DIR4_GPIO_Port, DIR5_GPIO_Port, DIR6_GPIO_Port, DIR7_GPIO_Port, DIR8_GPIO_Port, DIR9_GPIO_Port};
-uint16_t const dir_pin_arr[NUM_MOTORS] = {DIR1_Pin, DIR2_Pin, DIR3_Pin, DIR4_Pin, DIR5_Pin, DIR6_Pin, DIR7_Pin, DIR8_Pin, DIR9_Pin};
+GPIO_TypeDef * const dir_port_arr[NUM_MOTORS] = {DIR1_GPIO_Port, DIR2_GPIO_Port, DIR3_GPIO_Port,
+		DIR4_GPIO_Port, DIR5_GPIO_Port, DIR6_GPIO_Port, DIR7_GPIO_Port,
+		DIR8_GPIO_Port, DIR9_GPIO_Port, DIR10_GPIO_Port, DIR11_GPIO_Port};
+uint16_t const dir_pin_arr[NUM_MOTORS] = {DIR1_Pin, DIR2_Pin, DIR3_Pin, DIR4_Pin, DIR5_Pin,
+		DIR6_Pin, DIR7_Pin, DIR8_Pin, DIR9_Pin, DIR10_Pin, DIR11_Pin};
 
 /* USER CODE END 0 */
 
@@ -223,6 +226,8 @@ int main(void)
 		timer_update_TX();
 		drill_quad_poll();
 		drill_update_TX();
+
+		wrist_turn(wrist_command);
 
 		TxData_buf[data_out_length-1] = '\n';
 		HAL_UART_Transmit(&huart4, TxData_buf, data_out_length, 100);
@@ -1136,6 +1141,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	for (int i = 0; i < NUM_SERVOS; i++){
 		servo_arr[i] = uart_rx_buf[(2*NUM_MOTORS) + i];
 	}
+	wrist_command = uart_rx_buf[2*NUM_MOTORS + NUM_SERVOS];
+
 	HAL_UART_Receive_DMA(&huart4, uart_rx_buf, UART_RX_SIZE);
 }
 /* USER CODE END 4 */

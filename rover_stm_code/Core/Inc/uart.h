@@ -12,9 +12,10 @@
 #define NUM_QUAD 5 //number of quadrature on timers
 #define NUM_ENCODERS 4 //number of AS5600 encoders (1 for testing, 6 in reality)
 
-#define NUM_MOTORS 9 //number of motors (on PCA 1)
+#define NUM_MOTORS 11 //number of motors (on PCA 1)
 #define NUM_SERVOS 1 //number of servos on PCA 2
-#define UART_RX_SIZE 2*NUM_MOTORS + NUM_SERVOS
+#define WRIST_NUM_BYTES 1 //number of bytes for wrist command
+#define UART_RX_SIZE 2*NUM_MOTORS + NUM_SERVOS + WRIST_NUM_BYTES
 
 #define NUM_ACS 9 //4 in adc1 and 5 in adc2
 #define data_in_length (2*NUM_MOTORS) + NUM_SERVOS //input byte array
