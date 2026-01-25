@@ -48,7 +48,7 @@ void read_magnetic_encoder(void)
     {
         select_mux_channel(i);
 
-        HAL_StatusTypeDef st = HAL_I2C_Mem_Read(&hi2c1, AS5600_ADDRESS, 0x0E, I2C_MEMADD_SIZE_8BIT, buf, 2, HAL_MAX_DELAY);
+        HAL_StatusTypeDef st = HAL_I2C_Mem_Read(&hi2c1, AS5600_ADDRESS, 0x0E, I2C_MEMADD_SIZE_8BIT, buf, 2, 100);
 
         HAL_Delay(2);
 
@@ -67,6 +67,17 @@ void read_magnetic_encoder(void)
 			TxData_buf[8*(NUM_QUAD + 1) + 2*i] = (scaled >> 8) & 0xFF;
 			TxData_buf[8*(NUM_QUAD + 1) + 2*i + 1] = scaled & 0xFF;
         }
+        else {
+			// ERROR HANDLING:
+			TxData_buf[8*(NUM_QUAD + 1) + 2*i] = 0xEE;
+			TxData_buf[8*(NUM_QUAD + 1) + 2*i + 1] = 0xEE;
+
+			//Attempt to reset the I2C peripheral if it gets stuck
+			if (hi2c1.State != HAL_I2C_STATE_READY) {
+				HAL_I2C_DeInit(&hi2c1);
+				HAL_I2C_Init(&hi2c1);
+			}
+		}
     }
 }
 

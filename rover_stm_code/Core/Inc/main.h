@@ -37,7 +37,6 @@ extern "C" {
 #include "stepper.h"
 #include "quad_gpio.h"
 #include "enc_poll.h"
-
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -189,12 +190,11 @@ int main(void)
   HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
   HAL_TIM_Encoder_Start(&htim8, TIM_CHANNEL_ALL);
   //startup sequence
-  HAL_TIM_Base_Start_IT(&htim6); //I2C mux read interupt timer
+  HAL_TIM_Base_Start_IT(&htim7);
   Encoder_Init();
   Start_ADC_DMA_All();
   PCA9685_MOTOR_Init();
   PCA9685_MOTOR_SetFrequency(1000);
-  PCA9685_MOTOR_SetPWM(0, 0, 0);
 
   PCA9685_CAM_Init();
   PCA9685_CAM_SetFrequency(50);
