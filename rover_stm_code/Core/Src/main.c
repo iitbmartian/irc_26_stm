@@ -117,7 +117,7 @@ uint8_t uart_rx_buf[UART_RX_SIZE];
 volatile uint8_t pwm_arr[NUM_MOTORS];
 uint16_t pwm_out[NUM_MOTORS];
 volatile _Bool dir_arr[NUM_MOTORS];
-volatile uint8_t servo_arr[NUM_SERVOS];
+volatile uint16_t servo_arr[NUM_SERVOS];
 uint8_t wrist_command = 0;
 //_Bool down = 0;
 
@@ -209,15 +209,12 @@ int main(void)
 	while (1)
 	{
 		for (int i = 0; i < NUM_MOTORS; i++){
-//			pwm_out[i] = pwm_arr[i];
-//			pwm_out[i] = pwm_out[i] << 4;
-//			pwm_out[i] = 2000;
 			PCA9685_MOTOR_SetPWM(get_pca_index_val[i], 0, ((uint16_t)pwm_arr[i]) << 4);
 			HAL_GPIO_WritePin(dir_port_arr[i], dir_pin_arr[i], dir_arr[i]);
 		}
 
 		for (int i = 0; i < NUM_SERVOS; i++){
-			PCA9685_CAM_SetPWM(i, 0, ((uint16_t)servo_arr[i]) << 4);
+			PCA9685_CAM_SetPWM(i, 0, servo_arr[i]);
 		}
 
 		read_magnetic_encoder();
@@ -1134,17 +1131,20 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	for (int i = 0; i < NUM_MOTORS; i++){
-		dir_arr[i] = uart_rx_buf[2*i];
-		pwm_arr[i] = uart_rx_buf[2*i + 1];
+	for (int i = 0; i < NUM_MOTORS; i++) {
+			dir_arr[i] = uart_rx_buf[2*i];
+			pwm_arr[i] = uart_rx_buf[2*i + 1];
 	}
 	for (int i = 0; i < NUM_SERVOS; i++){
-		servo_arr[i] = uart_rx_buf[(2*NUM_MOTORS) + i];
+		// 16 bits of which 12 are used
+		servo_arr[i] = (uart_rx_buf[(2*NUM_MOTORS) + 2*i]) << 8;
+		servo_arr[i] = (servo_arr[i] | (uart_rx_buf[2*NUM_MOTORS + 2*i + 1]));
 	}
-	wrist_command = uart_rx_buf[2*NUM_MOTORS + NUM_SERVOS];
+	wrist_command = uart_rx_buf[2*NUM_MOTORS + 2*NUM_SERVOS];
 
 	HAL_UART_Receive_DMA(&huart4, uart_rx_buf, UART_RX_SIZE);
 }
+
 /* USER CODE END 4 */
 
 /**
